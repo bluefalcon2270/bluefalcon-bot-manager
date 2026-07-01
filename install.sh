@@ -1,7 +1,7 @@
 #!/bin/bash
 # ==============================================================================
-# BlueFalcon Ultimate Toolkit - Bootstrap Installer
-# Version: v1.1
+# BlueFalcon Bot Manager - Bootstrap Installer
+# Version: v1.2
 # Description: Secure one-liner installation wrapper to prevent memory-execution 
 #              symlink failures.
 # ==============================================================================
@@ -20,7 +20,7 @@ readonly NC='\033[0m'
 readonly BOT_DIR="/opt/bluefalcon-bot"
 readonly MAIN_SCRIPT_DEST="${BOT_DIR}/bluefalcon.sh"
 readonly SYMLINK_PATH="/usr/local/bin/bluefalcon"
-readonly REMOTE_URL="https://raw.githubusercontent.com/bluefalcon2270/bluefalcon-ultimate-toolkit/main/bluefalcon.sh"
+readonly REMOTE_URL="https://raw.githubusercontent.com/bluefalcon2270/bluefalcon-bot-manager/main/bluefalcon.sh"
 readonly LOG_FILE="/var/log/bluefalcon-bootstrap.log"
 
 # ==========================================
@@ -123,7 +123,7 @@ create_symlink() {
 # ==========================================
 clear
 echo -e "${BOLD_BLUE}======================================================${NC}"
-echo -e "${BOLD_BLUE}        BlueFalcon Ultimate Toolkit Bootstrap         ${NC}"
+echo -e "${BOLD_BLUE}          BlueFalcon Bot Manager Bootstrap            ${NC}"
 echo -e "${BOLD_BLUE}======================================================${NC}"
 
 touch "$LOG_FILE"
