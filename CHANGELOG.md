@@ -2,10 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
-v1.9:
-- bump versioning system to +0.1 increments.
-- add 🔄 Restart Bot button to the main Telegram menu for users.
-- streamline purchase flow to bypass payment method selection.
+v2.0 (Complete Professional Rewrite):
+- Full ground-up rewrite of Python bot with clean FSM state machine architecture.
+- Beautiful bilingual (EN/FA) welcome screen with shop logo on /start.
+- Separate Start, Stop, Restart options in the terminal manager menu.
+- Terminal menu shows live bot status (RUNNING/STOPPED) with PID.
+- Buy flow: balance-only checkout with instant purchase confirmation.
+- Add Funds menu shows only configured methods (card/link/both).
+- Admin Panel: added View Users, Set Tagline, improved product management.
+- Support desk: admin reply routing works from any reply-to context.
+- Referral/affiliate commission system fully integrated.
+- Auto-return after Start/Stop/Restart (no Enter required).
+- All admin actions return to Admin Panel automatically.
+- Separated bot log (/var/log/bluefalcon-bot.log) from script log.
 
 v1.8:
 - add Mass Broadcast System to send text and photo messages to all users.
