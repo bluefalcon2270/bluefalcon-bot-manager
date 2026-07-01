@@ -20,7 +20,7 @@ readonly NC='\033[0m'
 readonly BOT_DIR="/opt/bluefalcon-bot"
 readonly MAIN_SCRIPT_DEST="${BOT_DIR}/bluefalcon.sh"
 readonly SYMLINK_PATH="/usr/local/bin/bluefalcon"
-readonly REMOTE_URL="https://raw.githubusercontent.com/bluefalcon2270/bluefalcon-bot-manager/main/bluefalcon.sh"
+readonly REMOTE_REPO="https://github.com/bluefalcon2270/bluefalcon-bot-manager.git"
 readonly LOG_FILE="/var/log/bluefalcon-bootstrap.log"
 
 # ==========================================
@@ -100,17 +100,23 @@ check_os() {
     fi
 }
 
-ensure_curl() {
-    if ! command -v curl >/dev/null 2>&1; then
+ensure_git() {
+    if ! command -v git >/dev/null 2>&1; then
         export DEBIAN_FRONTEND=noninteractive
         apt-get update -yq
-        apt-get install -yq curl
+        apt-get install -yq git
     fi
 }
 
 download_payload() {
-    mkdir -p "$BOT_DIR"
-    curl -sSLo "$MAIN_SCRIPT_DEST" "${REMOTE_URL}?v=$(date +%s)"
+    if [ -d "$BOT_DIR/.git" ]; then
+        cd "$BOT_DIR"
+        git fetch --all
+        git reset --hard origin/main
+    else
+        rm -rf "$BOT_DIR"
+        git clone "$REMOTE_REPO" "$BOT_DIR"
+    fi
     chmod +x "$MAIN_SCRIPT_DEST"
 }
 
@@ -131,8 +137,8 @@ chmod 600 "$LOG_FILE"
 
 check_root
 check_os
-run_task "Verifying secure transfer protocols (curl)" ensure_curl
-run_task "Downloading BlueFalcon core payload" download_payload
+run_task "Verifying secure transfer protocols (git)" ensure_git
+run_task "Cloning BlueFalcon core payload" download_payload
 run_task "Establishing global CLI command" create_symlink
 
 echo ""
