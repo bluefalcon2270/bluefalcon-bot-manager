@@ -141,7 +141,7 @@ show_menu() {
     echo ""
     echo -e "  Status: $status_line"
     echo ""
-    echo -e "  ${C_CYAN}1)${C_RESET} Update Bot"
+    echo -e "  ${C_CYAN}1)${C_RESET} Install / Update"
     echo -e "  ${C_CYAN}2)${C_RESET} Configure"
     echo -e "  ${C_CYAN}3)${C_RESET} Start / Stop"
     echo -e "  ${C_CYAN}4)${C_RESET} Remove Bot"
