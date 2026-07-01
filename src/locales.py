@@ -2,7 +2,7 @@ LANG = {
     'en': {
         'select_lang': "🌍 Please select your language:",
         'welcome': "⭐ *Welcome to BlueFalcon!*\n\n🦅 The ultimate Telegram management toolkit.\nBuilt for speed, security, and simplicity.\n\n*Why BlueFalcon?* 🚀\n⚡ Lightning-fast response times\n🔒 Secure & encrypted transactions\n💎 Premium features without the premium price\n📞 24/7 Support at your fingertips\n\n👇 Please select an option from the menu below to get started:",
-        'main_menu': "🏠 *Main Menu*",
+        'system_ready': "✅ System Ready.",
         'lang_selected': "🇬🇧 English selected. Welcome!",
         'add_funds': "💳 *Add Funds*\n\nSelect a payment method:",
         'card_transfer': "🏦 *Card Transfer*\n\nPlease transfer to:\n`{card_num}`\n\n_After transferring, click below to submit your receipt._",
@@ -52,7 +52,7 @@ LANG = {
     'fa': {
         'select_lang': "🌍 لطفا زبان خود را انتخاب کنید:",
         'welcome': "⭐ *به ربات BlueFalcon خوش آمدید!*\n\n🦅 پیشرفته‌ترین ابزار مدیریت تلگرام.\nساخته شده برای سرعت، امنیت و سادگی.\n\n*چرا BlueFalcon؟* 🚀\n⚡ سرعت پاسخگویی رعدآسا\n🔒 تراکنش‌های امن و رمزنگاری شده\n💎 امکانات پریمیوم با قیمت منصفانه\n📞 پشتیبانی 24/7 در کنار شما\n\n👇 برای شروع از منوی پایین استفاده کنید:",
-        'main_menu': "🏠 *منوی اصلی*",
+        'system_ready': "✅ سیستم آماده است.",
         'lang_selected': "🇮🇷 فارسی انتخاب شد. خوش آمدید!",
         'add_funds': "💳 *افزایش موجودی*\n\nروش پرداخت را انتخاب کنید:",
         'card_transfer': "🏦 *کارت به کارت*\n\nلطفا مبلغ را به کارت زیر واریز کنید:\n`{card_num}`\n\n_پس از واریز، روی دکمه زیر کلیک کنید._",

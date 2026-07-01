@@ -24,7 +24,7 @@ def send_welcome(chat_id, uid):
         types.KeyboardButton(t(u['lang'], 'btn_main_menu')),
         types.KeyboardButton(t(u['lang'], 'btn_restart'))
     )
-    bot.send_message(chat_id, t(u['lang'], 'welcome'), reply_markup=markup)
+    bot.send_message(chat_id, t(u['lang'], 'system_ready'), reply_markup=markup)
     send_inline_main_menu(chat_id, uid)
 
 def send_inline_main_menu(chat_id, uid):
@@ -45,7 +45,7 @@ def send_inline_main_menu(chat_id, uid):
     if str(uid) == str(config.ADMIN_ID):
         mk.add(types.InlineKeyboardButton(t(l, 'btn_admin'), callback_data='menu_admin'))
         
-    bot.send_message(chat_id, t(l, 'main_menu'), reply_markup=mk)
+    bot.send_message(chat_id, t(l, 'welcome'), reply_markup=mk)
 
 def handle_callback_user(call):
     uid = call.from_user.id

@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## v3.6.0 (Unified Interface Rewrite):
+- Removed the separate top welcome message block entirely.
+- Merged the rich welcome text directly into the main menu inline keyboard block. This guarantees the message bubble is wide enough to frame the menu perfectly.
+- Replaced the top message with a discrete, tiny "✅ System Ready" notification that invisibly carries the bottom persistent keyboard, solving the Telegram keyboard limitation.
+
 ## v3.5 (Rich UI & Centralized Versioning):
 - Transformed the short Telegram welcome messages into rich, multi-line marketing text. This naturally widens the message bubble to perfectly frame the inline menu grid below it.
 - Implemented a centralized versioning architecture. A master `VERSION` file now dictates the version number for all Bash scripts and the Python bot simultaneously.
