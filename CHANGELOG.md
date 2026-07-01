@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+v1.5:
+- add fully-featured E-Commerce system generated directly by Bash.
+- add Admin Panel for bot owners to manage products, settings, and deliver purchases.
+- add User Wallets (Balance) and Phone Number collection.
+- add manual and automatic payment workflows.
+- add User Purchase History to track delivered items via Payment IDs.
+
 v1.4:
 - add dual-language support (English and Persian) to the generated Telegram bot.
 - add Small Online Shop default template layout with bilingual reply keyboards.
