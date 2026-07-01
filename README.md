@@ -13,7 +13,7 @@
 <br />
 </div>
 
-An expert-grade, meticulously strict Linux deployment toolkit for Telegram Bots. Engineered specifically for modern Debian and Ubuntu server environments, it handles completely automated dependency installations, secure configuration generation, and persistent background execution with a professional terminal UI.
+An expert-grade, meticulously strict Linux deployment toolkit for Telegram Bots. Easngineered specifically for modern Debian and Ubuntu server environments, it handles completely automated dependency installations, secure configuration generation, and persistent background execution with a professional terminal UI.
 
 <br>
 
