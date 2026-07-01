@@ -21,7 +21,7 @@ An expert-grade, meticulously strict Linux deployment toolkit for Telegram Bots.
 Run this single command with root privileges on your fresh VPS. It acts as a secure bootstrap wrapper to bypass memory-execution limitations, pulling the core payload directly to your disk:
 
 ```bash
-bash <(curl -Ls [https://raw.githubusercontent.com/bluefalcon2270/bluefalcon-bot-manager/main/install.sh](https://raw.githubusercontent.com/bluefalcon2270/bluefalcon-bot-manager/main/install.sh))
+bash <(curl -Ls https://raw.githubusercontent.com/bluefalcon2270/bluefalcon-bot-manager/main/install.sh)
 ```
 
 **Global Shortcut:** Once installed, simply type `bluefalcon` from anywhere in your terminal to instantly launch the system manager!
