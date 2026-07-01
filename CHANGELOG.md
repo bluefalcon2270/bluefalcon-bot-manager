@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## v3.5 (Rich UI & Centralized Versioning):
+- Transformed the short Telegram welcome messages into rich, multi-line marketing text. This naturally widens the message bubble to perfectly frame the inline menu grid below it.
+- Implemented a centralized versioning architecture. A master `VERSION` file now dictates the version number for all Bash scripts and the Python bot simultaneously.
+- Created `bump_version.sh` utility to automate version bumps and changelog entry generation.
+
 ## v3.4 (Telegram Bot UI Optimization & Language Selection):
 - Restored the initial language selection prompt (English/Persian) when new users send `/start`.
 - Deeply optimized the Telegram inline keyboard layouts to be perfectly symmetrical using explicit `row()` configurations.

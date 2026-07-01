@@ -1,3 +1,4 @@
+import os
 import sys
 import uuid
 import logging
@@ -117,5 +118,13 @@ if __name__ == '__main__':
         sys.exit(1)
         
     load_db()
-    logger.info(f"BlueFalcon Bot V3.1 Started! Admin: {config.ADMIN_ID}")
+    
+    version = "Unknown"
+    try:
+        with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'VERSION'), 'r') as f:
+            version = f.read().strip()
+    except Exception:
+        pass
+        
+    logger.info(f"BlueFalcon Bot V{version} Started! Admin: {config.ADMIN_ID}")
     bot.infinity_polling(timeout=30, long_polling_timeout=20, logger_level=None)

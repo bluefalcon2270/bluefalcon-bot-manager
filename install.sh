@@ -1,7 +1,7 @@
 #!/bin/bash
 # ==============================================================================
 # BlueFalcon Telegram Bot - Bootstrap Installer
-# Version: v2.0
+# Version is dynamically fetched from github during bootstrap.
 # Description: Secure one-liner installation wrapper to prevent memory-execution 
 #              symlink failures.
 # ==============================================================================
@@ -123,8 +123,9 @@ create_symlink() {
 # EXECUTION
 # ==========================================
 clear
+BOOTSTRAP_VERSION=$(curl -s https://raw.githubusercontent.com/bluefalcon2270/bluefalcon-bot-manager/main/VERSION || echo "Unknown")
 echo -e "${BOLD_BLUE}======================================================${NC}"
-echo -e "${BOLD_BLUE}          BlueFalcon Telegram Bot Bootstrap            ${NC}"
+echo -e "${BOLD_BLUE}     BlueFalcon Telegram Bot Bootstrap (v${BOOTSTRAP_VERSION})    ${NC}"
 echo -e "${BOLD_BLUE}======================================================${NC}"
 
 touch "$LOG_FILE"

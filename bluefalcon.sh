@@ -10,7 +10,7 @@ set -eEu -o pipefail
 # ==========================================
 # CONSTANTS & COLORS
 # ==========================================
-readonly SCRIPT_VERSION="v3.3"
+readonly SCRIPT_VERSION="v$(cat /opt/bluefalcon-bot/VERSION 2>/dev/null || echo 'Unknown')"
 readonly CONFIG_DIR="/etc/bluefalcon"
 readonly CONFIG_FILE="${CONFIG_DIR}/config.conf"
 readonly LOG_FILE="/var/log/bluefalcon-bot.log"
