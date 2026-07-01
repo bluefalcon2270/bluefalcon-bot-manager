@@ -2,6 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
+## v3.7.1 (Hotfix):
+- Fixed a callback routing bug where the `menu_admin` button was being incorrectly passed to the user callback handler instead of the admin callback handler, causing the Admin Panel to not open.
+
 ## v3.7.0 (Menu Restructure & Language Settings):
 - Streamlined the Main Menu by moving "Increase Balance" (formerly Add Funds) and "Invite Friend" into the "My Account" section.
 - Added a dedicated "Change Language" (🌍) button inside the "My Account" menu, allowing users to toggle between English and Persian at any time.

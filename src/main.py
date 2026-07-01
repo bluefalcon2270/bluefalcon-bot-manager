@@ -107,7 +107,7 @@ def on_message(message):
 @bot.callback_query_handler(func=lambda call: True)
 def on_callback(call):
     # Route admin callbacks if admin
-    if str(call.from_user.id) == str(config.ADMIN_ID) and (call.data.startswith('admin_') or call.data.startswith('del') or call.data.startswith('approve_') or call.data.startswith('reject_')):
+    if str(call.from_user.id) == str(config.ADMIN_ID) and (call.data.startswith('admin_') or call.data.startswith('del') or call.data.startswith('approve_') or call.data.startswith('reject_') or call.data == 'menu_admin'):
         handle_admin_callback(call)
     else:
         handle_callback_user(call)
