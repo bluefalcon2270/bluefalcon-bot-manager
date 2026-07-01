@@ -10,7 +10,7 @@ set -eEu -o pipefail
 # ==========================================
 # CONSTANTS & COLORS
 # ==========================================
-readonly SCRIPT_VERSION="v3.1"
+readonly SCRIPT_VERSION="v3.2"
 readonly CONFIG_DIR="/etc/bluefalcon"
 readonly CONFIG_FILE="${CONFIG_DIR}/config.conf"
 readonly LOG_FILE="/var/log/bluefalcon-bot.log"
@@ -144,26 +144,25 @@ show_menu() {
     local status_line
     if [[ "$status_raw" == RUNNING* ]]; then
         local pid="${status_raw#*PID: }"
-        status_line="${C_GREEN}${C_BOLD}● RUNNING${C_RESET}  ${C_CYAN}(PID: $pid)${C_RESET}"
+        status_line="${C_GREEN}${C_BOLD}RUNNING${C_RESET}  ${C_CYAN}(PID: $pid)${C_RESET}"
     else
-        status_line="${C_RED}${C_BOLD}○ STOPPED${C_RESET}"
+        status_line="${C_RED}${C_BOLD}STOPPED${C_RESET}"
     fi
 
-    echo -e "${C_BLUE}${C_BOLD}"
-    echo -e "  ╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮"
-    echo -e "  │         BlueFalcon Telegram Bot $SCRIPT_VERSION        │"
-    echo -e "  ╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯${C_RESET}"
+    echo -e "${C_BLUE}${C_BOLD}=====================================================${C_RESET}"
+    echo -e "${C_BLUE}${C_BOLD}      🦅 BlueFalcon Telegram Bot ($SCRIPT_VERSION) 🦅        ${C_RESET}"
+    echo -e "${C_BLUE}${C_BOLD}=====================================================${C_RESET}"
     echo ""
-    echo -e "  Status: $status_line"
+    echo -e " Status: $status_line"
     echo ""
-    echo -e "  ${C_CYAN}1)${C_RESET} Install / Update"
-    echo -e "  ${C_CYAN}2)${C_RESET} Configure"
-    echo -e "  ${C_CYAN}3)${C_RESET} Start / Stop"
-    echo -e "  ${C_CYAN}4)${C_RESET} Remove Bot"
-    echo -e "  ${C_CYAN}5)${C_RESET} View Logs"
-    echo -e "  ${C_CYAN}0)${C_RESET} Exit"
+    echo " 1. Install / Update Bot"
+    echo " 2. Configure"
+    echo " 3. Start / Stop"
+    echo " 4. Remove Bot"
+    echo " 5. View Logs"
+    echo " 0. Exit"
     echo ""
-    printf "  ${C_YELLOW}▶ Select option: ${C_RESET}"
+    printf " Select option: "
 }
 
 auto_return() {

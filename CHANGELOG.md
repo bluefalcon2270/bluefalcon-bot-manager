@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## v3.2 (Ultimate Toolkit UI Parity):
+- Redesigned Bash terminal menus to be a 1:1 replica of the `bluefalcon-ultimate-toolkit` aesthetic.
+- Replaced rounded menu borders with classic `=` horizontal banners.
+- Adjusted option numerical formatting and prompt styles for maximum simplicity.
+- Striped terminal status indicators to purely text-based (no bullets) for cleaner look.
+
 ## v3.1 (Complete Architectural Overhaul & UI Upgrades):
 - Separated Python codebase into a professional `src/` directory.
 - Converted `bluefalcon.sh` into a lightweight, pure Bash Terminal Manager.
