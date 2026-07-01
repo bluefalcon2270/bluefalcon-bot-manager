@@ -529,8 +529,13 @@ def text_handler(message):
     # Handle Admin Reply to Support Ticket
     if uid == str(ADMIN_ID) and message.reply_to_message:
         reply = message.reply_to_message
+        target_uid = None
         if reply.forward_from:
             target_uid = reply.forward_from.id
+        elif reply.text and "answer User: " in reply.text:
+            target_uid = reply.text.split("answer User: ")[1].strip()
+            
+        if target_uid:
             try:
                 bot.send_message(target_uid, f"👨‍💻 Support Reply:\n\n{text}")
                 bot.reply_to(message, "Reply sent to user!")
@@ -894,7 +899,7 @@ toggle_bot() {
     else
         run_task "Starting Bot service" do_start_bot
     fi
-    read -p "Press Enter to return..."
+    sleep 3
 }
 
 do_stop_bot() {
