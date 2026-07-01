@@ -2,12 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
-## v3.0 (Complete Architectural Overhaul):
+## v3.1 (Complete Architectural Overhaul & UI Upgrades):
 - Separated Python codebase into a professional `src/` directory.
 - Converted `bluefalcon.sh` into a lightweight, pure Bash Terminal Manager.
 - Updated `install.sh` to use standard `git clone` for robust deployment.
 - Redesigned Telegram texts for absolute minimalism, brevity, and modern aesthetic.
 - Split bot logic into modular `bot_handlers.py`, `admin_handlers.py`, and `locales.py`.
+- Integrated beautiful animated braille spinner `(⠋ ⠙ ⠹)` into the bash manager for loading tasks.
+- Streamlined Terminal Menu UI with vertical list formatting and fixed rendering bugs.
 
 v2.1.1 (Fix)
 

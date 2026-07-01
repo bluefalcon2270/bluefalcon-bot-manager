@@ -10,7 +10,7 @@ set -eEu -o pipefail
 # ==========================================
 # CONSTANTS & COLORS
 # ==========================================
-readonly SCRIPT_VERSION="v2.1"
+readonly SCRIPT_VERSION="v3.1"
 readonly CONFIG_DIR="/etc/bluefalcon"
 readonly CONFIG_FILE="${CONFIG_DIR}/config.conf"
 readonly LOG_FILE="/var/log/bluefalcon-bot.log"
@@ -36,16 +36,31 @@ log_msg() {
 run_task() {
     local msg="$1"
     shift
-    printf "  ${C_CYAN}▶${C_RESET} %-35s " "$msg"
-    "$@" >> "$SCRIPT_LOG" 2>&1 &
+    "$@" >> "$SCRIPT_LOG" 2>&1 < /dev/null &
     local pid=$!
-    wait $pid || {
-        echo -e "[ ${C_RED}✖ Failed${C_RESET} ]"
+    local delay=0.1
+    local frames=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
+    
+    tput civis
+    while kill -0 "$pid" 2>/dev/null; do
+        for frame in "${frames[@]}"; do
+            printf "\r  [ ${C_CYAN}%s${C_RESET} ] %s" "$frame" "$msg"
+            sleep $delay
+        done
+    done
+    wait "$pid"
+    local exit_status=$?
+    
+    if [ $exit_status -eq 0 ]; then
+        printf "\r  [ ${C_GREEN}✔${C_RESET} ] %s\033[K\n" "$msg"
+        log_msg "SUCCESS: $msg"
+    else
+        printf "\r  [ ${C_RED}✖${C_RESET} ] %s\033[K\n" "$msg"
+        tput cnorm
         log_msg "FAILED: $msg"
         exit 1
-    }
-    echo -e "[ ${C_GREEN}✔ Done${C_RESET} ]"
-    log_msg "SUCCESS: $msg"
+    fi
+    tput cnorm
 }
 
 check_root() {
