@@ -10,7 +10,7 @@ set -eEu -o pipefail
 # ==========================================
 # CONSTANTS & COLORS
 # ==========================================
-readonly SCRIPT_VERSION="v3.2"
+readonly SCRIPT_VERSION="v3.3"
 readonly CONFIG_DIR="/etc/bluefalcon"
 readonly CONFIG_FILE="${CONFIG_DIR}/config.conf"
 readonly LOG_FILE="/var/log/bluefalcon-bot.log"
@@ -162,14 +162,13 @@ show_menu() {
     echo " 5. View Logs"
     echo " 0. Exit"
     echo ""
-    printf " Select option: "
 }
 
 auto_return() {
     echo ""
-    echo -e "  $1"
-    echo -e "  ${C_CYAN}Returning to menu in 3 seconds...${C_RESET}"
-    sleep 3
+    echo -e " $1"
+    echo ""
+    read -rp " Press Enter to return to menu..."
 }
 
 # ==========================================
@@ -200,26 +199,23 @@ do_setup_venv() {
 
 collect_credentials() {
     echo ""
-    echo -e "  ${C_BLUE}${C_BOLD}╭─ Configure Bot API ─────────────────╮${C_RESET}"
+    echo -e "${C_BLUE}${C_BOLD}--- Configure Bot API ---${C_RESET}"
     local bot_token=""
     while [ -z "$bot_token" ]; do
-        printf "  ${C_CYAN}│${C_RESET} Bot Token: "
-        read -r bot_token
-        [ -z "$bot_token" ] && echo -e "  ${C_CYAN}│${C_RESET} ${C_RED}Required.${C_RESET}"
+        read -rp " Bot Token: " bot_token
+        [ -z "$bot_token" ] && echo -e " ${C_RED}Required.${C_RESET}"
     done
     local admin_id=""
     while [[ ! "$admin_id" =~ ^[0-9]+$ ]]; do
-        printf "  ${C_CYAN}│${C_RESET} Admin ID:  "
-        read -r admin_id
-        [[ ! "$admin_id" =~ ^[0-9]+$ ]] && echo -e "  ${C_CYAN}│${C_RESET} ${C_RED}Numbers only.${C_RESET}"
+        read -rp " Admin ID:  " admin_id
+        [[ ! "$admin_id" =~ ^[0-9]+$ ]] && echo -e " ${C_RED}Numbers only.${C_RESET}"
     done
-    echo -e "  ${C_BLUE}${C_BOLD}╰─────────────────────────────────────╯${C_RESET}"
     sed -i '/^BOT_TOKEN=/d' "$CONFIG_FILE" 2>/dev/null || true
     sed -i '/^ADMIN_ID=/d'  "$CONFIG_FILE" 2>/dev/null || true
     { echo "BOT_TOKEN=\"$bot_token\""; echo "ADMIN_ID=\"$admin_id\""; } >> "$CONFIG_FILE"
     chmod 600 "$CONFIG_FILE"
     echo ""
-    echo -e "  ${C_GREEN}✔ Saved.${C_RESET}"
+    echo -e " [ ${C_GREEN}✔${C_RESET} ] Saved."
     sleep 1
 }
 
@@ -277,13 +273,12 @@ toggle_bot() {
 
 remove_bot() {
     echo ""
-    printf "  Are you sure you want to completely remove the bot? [y/N]: "
-    read -r confirm
+    read -rp " Are you sure you want to completely remove the bot? [y/N]: " confirm
     if [[ "$confirm" =~ ^[Yy]$ ]]; then
         run_task "Stopping Bot" do_stop_bot || true
         rm -rf "$BOT_DIR"
         rm -f /usr/local/bin/bluefalcon
-        auto_return "🗑 Bot removed completely."
+        auto_return "[ ${C_RED}🗑${C_RESET} ] Bot removed completely."
     else
         auto_return "Canceled."
     fi
@@ -291,16 +286,16 @@ remove_bot() {
 
 view_logs() {
     echo ""
-    echo "  ━━━━━━━━━━━━ Bot Logs (last 40 lines) ━━━━━━━━━━━━"
+    echo -e "${C_BLUE}${C_BOLD}--- Bot Logs (last 40 lines) ---${C_RESET}"
     echo ""
     if [ -f "$LOG_FILE" ]; then
         tail -n 40 "$LOG_FILE"
     else
-        echo "  No log file found at $LOG_FILE"
+        echo " No log file found at $LOG_FILE"
     fi
     echo ""
-    printf "  Press Enter to return..."
-    read -r
+    read -rp " Press Enter to return..."
+
 }
 
 # ==========================================
@@ -310,7 +305,7 @@ pre_flight
 
 while true; do
     show_menu
-    read -r choice
+    read -rp " Select option: " choice
     case "$choice" in
         1) install_bot    ;;
         2) configure_bot  ;;

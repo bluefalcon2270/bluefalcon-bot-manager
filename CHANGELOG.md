@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## v3.4 (Telegram Bot UI Optimization & Language Selection):
+- Restored the initial language selection prompt (English/Persian) when new users send `/start`.
+- Deeply optimized the Telegram inline keyboard layouts to be perfectly symmetrical using explicit `row()` configurations.
+- Re-balanced emojis and text lengths across `locales.py` to ensure unified visual weight on all platforms.
+- Bumped Python bot core logger version to V3.1.
+
+## v3.3 (Installer UI Parity & Sub-menu Refactor):
+- Upgraded `install.sh` to use robust array-based braille spinner matching `bluefalcon.sh` and toolkit aesthetics.
+- Fixed unicode rendering bug causing broken characters `[  ]` during installation process.
+- Stripped all rounded borders (`╭─ ╰─`) from sub-menus (Configure, View Logs) to match minimalist toolkit aesthetic.
+- Switched all UI prompts to `read -rp` to explicitly require Enter key confirmation, disabling auto-catch on paste.
+
 ## v3.2 (Ultimate Toolkit UI Parity):
 - Redesigned Bash terminal menus to be a 1:1 replica of the `bluefalcon-ultimate-toolkit` aesthetic.
 - Replaced rounded menu borders with classic `=` horizontal banners.

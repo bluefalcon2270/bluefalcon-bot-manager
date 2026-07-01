@@ -5,7 +5,7 @@ from telebot import types
 import config
 from database import db, load_db, save_db, get_user, set_user_state
 from locales import t
-from bot_handlers import bot, send_welcome, send_inline_main_menu, handle_callback_user, get_lang
+from bot_handlers import bot, send_welcome, send_inline_main_menu, handle_callback_user, get_lang, send_language_selection
 from admin_handlers import handle_admin_callback
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
@@ -27,8 +27,9 @@ def on_start(message):
             
     # Simple language selection if new
     if u['lang'] not in ['en', 'fa']:
-        u['lang'] = 'en'
-        save_db()
+        set_user_state(uid, 'IDLE')
+        send_language_selection(message.chat.id)
+        return
         
     set_user_state(uid, 'IDLE')
     send_welcome(message.chat.id, uid)
@@ -116,5 +117,5 @@ if __name__ == '__main__':
         sys.exit(1)
         
     load_db()
-    logger.info(f"BlueFalcon Bot V3 Started! Admin: {config.ADMIN_ID}")
+    logger.info(f"BlueFalcon Bot V3.1 Started! Admin: {config.ADMIN_ID}")
     bot.infinity_polling(timeout=30, long_polling_timeout=20, logger_level=None)

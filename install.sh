@@ -1,7 +1,7 @@
 #!/bin/bash
 # ==============================================================================
 # BlueFalcon Telegram Bot - Bootstrap Installer
-# Version: v1.9
+# Version: v2.0
 # Description: Secure one-liner installation wrapper to prevent memory-execution 
 #              symlink failures.
 # ==============================================================================
@@ -38,33 +38,28 @@ trap cleanup EXIT SIGINT SIGTERM
 run_task() {
     local msg="$1"
     shift
-    tput civis
-    printf "\r[ ⠋ ] %s" "$msg"
-    
-    "$@" >> "$LOG_FILE" 2>&1 &
+    "$@" >> "$LOG_FILE" 2>&1 < /dev/null &
     local pid=$!
-    echo $pid > /tmp/bluefalcon_bootstrap.pid
-    
     local delay=0.1
-    local spinstr="⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
-    local status=0
-
-    while kill -0 $pid 2>/dev/null; do
-        local temp=${spinstr#?}
-        printf "\r[ ${YELLOW}%c${NC} ] %s" "$spinstr" "$msg"
-        local spinstr=$temp${spinstr%"$temp"}
-        sleep $delay
-    done
-    wait $pid || status=$?
-    rm -f /tmp/bluefalcon_bootstrap.pid
+    local frames=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
     
-    if [ $status -eq 0 ]; then
-        printf "\r[ ${GREEN}✔${NC} ] %s\n" "$msg"
+    tput civis
+    while kill -0 "$pid" 2>/dev/null; do
+        for frame in "${frames[@]}"; do
+            printf "\r[ ${YELLOW}%s${NC} ] %s" "$frame" "$msg"
+            sleep $delay
+        done
+    done
+    wait "$pid"
+    local exit_status=$?
+    
+    if [ $exit_status -eq 0 ]; then
+        printf "\r[ ${GREEN}✔${NC} ] %s\033[K\n" "$msg"
     else
-        printf "\r[ ${RED}✖${NC} ] %s\n" "$msg"
+        printf "\r[ ${RED}✖${NC} ] %s\033[K\n" "$msg"
         echo -e "${RED}Bootstrap failed. Check ${LOG_FILE} for details.${NC}"
         tput cnorm
-        exit $status
+        exit $exit_status
     fi
     tput cnorm
 }

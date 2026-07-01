@@ -9,6 +9,14 @@ bot = telebot.TeleBot(config.BOT_TOKEN, parse_mode='Markdown')
 def get_lang(uid):
     return get_user(uid)['lang']
 
+def send_language_selection(chat_id):
+    mk = types.InlineKeyboardMarkup()
+    mk.row(
+        types.InlineKeyboardButton("🇬🇧 English", callback_data='setlang_en'),
+        types.InlineKeyboardButton("🇮🇷 فارسی", callback_data='setlang_fa')
+    )
+    bot.send_message(chat_id, "🌍 Please select your language / لطفا زبان خود را انتخاب کنید:", reply_markup=mk)
+
 def send_welcome(chat_id, uid):
     u = get_user(uid)
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
@@ -21,12 +29,16 @@ def send_welcome(chat_id, uid):
 
 def send_inline_main_menu(chat_id, uid):
     l = get_lang(uid)
-    mk = types.InlineKeyboardMarkup(row_width=2)
-    mk.add(
+    mk = types.InlineKeyboardMarkup()
+    mk.row(
         types.InlineKeyboardButton(t(l, 'btn_products'), callback_data='menu_products'),
         types.InlineKeyboardButton(t(l, 'btn_account'), callback_data='menu_account')
     )
-    mk.add(
+    mk.row(
+        types.InlineKeyboardButton(t(l, 'btn_add_funds'), callback_data='menu_add_funds'),
+        types.InlineKeyboardButton(t(l, 'btn_invite'), callback_data='menu_invite')
+    )
+    mk.row(
         types.InlineKeyboardButton(t(l, 'btn_faq'), callback_data='menu_faq'),
         types.InlineKeyboardButton(t(l, 'btn_support'), callback_data='menu_support')
     )
@@ -41,7 +53,15 @@ def handle_callback_user(call):
     l = get_lang(uid)
     data = call.data
     
-    if data == 'menu_main':
+    if data.startswith('setlang_'):
+        u = get_user(uid)
+        u['lang'] = data.split('_')[1]
+        save_db()
+        bot.delete_message(chat_id, call.message.message_id)
+        bot.answer_callback_query(call.id, t(u['lang'], 'lang_selected'))
+        send_welcome(chat_id, uid)
+        
+    elif data == 'menu_main':
         bot.delete_message(chat_id, call.message.message_id)
         send_inline_main_menu(chat_id, uid)
         
@@ -82,8 +102,10 @@ def handle_callback_user(call):
     elif data == 'menu_account':
         u = get_user(uid)
         mk = types.InlineKeyboardMarkup()
-        mk.add(types.InlineKeyboardButton(t(l, 'btn_add_funds'), callback_data='menu_add_funds'))
-        mk.add(types.InlineKeyboardButton(t(l, 'btn_invite'), callback_data='menu_invite'))
+        mk.row(
+            types.InlineKeyboardButton(t(l, 'btn_add_funds'), callback_data='menu_add_funds'),
+            types.InlineKeyboardButton(t(l, 'btn_invite'), callback_data='menu_invite')
+        )
         mk.add(types.InlineKeyboardButton(t(l, 'btn_back'), callback_data='menu_main'))
         text = t(l, 'my_account', balance=u['balance'], purchases=u['purchases'], invites=u['invites'], active_invites=u['active_invites'])
         bot.edit_message_text(text, chat_id, call.message.message_id, reply_markup=mk)
