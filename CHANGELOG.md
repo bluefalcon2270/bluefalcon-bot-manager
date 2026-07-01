@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+v1.7:
+- add Mandatory Channel Join (Force Join) feature to enforce channel subscriptions.
+- add Affiliate Marketing Engine with unique referral links.
+- add automatic percentage-based commission payouts to Bot Balance on successful referrals.
+- upgrade Admin Panel to configure Force Join Channel ID and Affiliate Commission %.
+- expand My Account menu to securely generate and display unique invite deep-links.
+
 v1.6:
 - add Shop Name and Shop Logo management to Telegram Admin Panel.
 - upgrade Admin Panel to use a conversational state machine (step-by-step inputs) instead of comma-separated strings.

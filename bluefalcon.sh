@@ -1,7 +1,7 @@
 #!/bin/bash
 # ==============================================================================
 # BlueFalcon Telegram Bot
-# Version: v1.6
+# Version: v1.7
 # Description: Expert-grade Linux deployment script for Telegram Bots.
 # ==============================================================================
 
@@ -10,7 +10,7 @@ set -eEu -o pipefail
 # ==========================================
 # CONSTANTS & COLORS
 # ==========================================
-readonly SCRIPT_VERSION="v1.6"
+readonly SCRIPT_VERSION="v1.7"
 readonly CONFIG_DIR="/etc/bluefalcon"
 readonly CONFIG_FILE="${CONFIG_DIR}/config.conf"
 readonly LOG_FILE="/var/log/bluefalcon-script.log"
@@ -182,6 +182,7 @@ import json
 import uuid
 import telebot
 from telebot import types
+from telebot.apihelper import ApiTelegramException
 
 CONFIG_FILE = "/etc/bluefalcon/config.conf"
 DB_FILE = "db.json"
@@ -208,6 +209,8 @@ db = {
     "settings": {
         "shop_name": "Online Shop",
         "shop_logo": None,
+        "shop_channel": None,
+        "affiliate_percent": 10,
         "admin_card": "1234-5678-9012-3456",
         "admin_name": "Admin Name",
         "direct_link": "https://gateway.com/pay",
@@ -244,6 +247,8 @@ LANGUAGES = {
         'no_products': 'No products available yet.',
         'acc_details': 'Name: {name}\nID: {id}\nPhone: {phone}\nBalance: ${bal}',
         'share_phone': '📱 Share Phone Number',
+        'invite_friends': '🔗 Invite Friends',
+        'invite_text': 'Invite your friends using your unique link!\nYou earn {pct}% commission on their purchases!\nLink: {link}',
         'phone_saved': 'Phone number saved!',
         'cart_empty': 'Your cart is empty.',
         'payment_methods': 'Select Payment Method:',
@@ -253,9 +258,13 @@ LANGUAGES = {
         'insufficient_bal': 'Insufficient balance!',
         'purchased_success': 'Successfully purchased from balance! Order ID: {oid}',
         'no_purchases': 'No purchases yet.',
+        'force_join': '⚠️ You must join our channel to use this bot!',
+        'verify_join': 'I Joined (Verify)',
         'admin_menu': 'Admin Panel:',
         'set_name': 'Set Shop Name',
         'set_logo': 'Set Shop Logo',
+        'set_channel': 'Set Shop Channel',
+        'set_affiliate': 'Set Affiliate %',
         'add_product': 'Add Product',
         'add_balance': 'Add User Balance',
         'assign_product': 'Assign Product',
@@ -273,8 +282,11 @@ LANGUAGES = {
         'ask_link': 'Enter Direct Payment Link:',
         'ask_shop_name': 'Enter the new Shop Name:',
         'ask_shop_logo': 'Send me the new Shop Logo (Photo):',
+        'ask_channel': 'Enter Channel Username (e.g. @MyChannel):',
+        'ask_affiliate': 'Enter Affiliate Commission Percentage (e.g. 10):',
         'success': 'Action completed successfully!',
-        'error': 'Error processing your request.'
+        'error': 'Error processing your request.',
+        'commission_earned': '🎉 Congratulations! A friend you invited made a purchase. You earned ${amt} commission!'
     },
     'fa': {
         'welcome': 'به {shop} خوش آمدید!',
@@ -288,6 +300,8 @@ LANGUAGES = {
         'no_products': 'محصولی موجود نیست.',
         'acc_details': 'نام: {name}\nآیدی: {id}\nشماره: {phone}\nموجودی: ${bal}',
         'share_phone': '📱 ارسال شماره تماس',
+        'invite_friends': '🔗 دعوت از دوستان',
+        'invite_text': 'دوستان خود را دعوت کنید و {pct}% از خرید آنها پورسانت بگیرید!\nلینک شما: {link}',
         'phone_saved': 'شماره شما ثبت شد!',
         'cart_empty': 'سبد خرید خالی است.',
         'payment_methods': 'روش پرداخت را انتخاب کنید:',
@@ -297,9 +311,13 @@ LANGUAGES = {
         'insufficient_bal': 'موجودی ناکافی!',
         'purchased_success': 'خرید با موفقیت انجام شد! شماره سفارش: {oid}',
         'no_purchases': 'خریدی ثبت نشده.',
+        'force_join': '⚠️ برای استفاده از ربات باید عضو کانال ما شوید!',
+        'verify_join': 'عضو شدم (تایید)',
         'admin_menu': 'پنل مدیریت:',
         'set_name': 'تنظیم نام فروشگاه',
         'set_logo': 'تنظیم لوگو فروشگاه',
+        'set_channel': 'تنظیم آیدی کانال',
+        'set_affiliate': 'تنظیم درصد پورسانت',
         'add_product': 'افزودن محصول',
         'add_balance': 'افزایش موجودی کاربر',
         'assign_product': 'ثبت خرید کاربر',
@@ -317,8 +335,11 @@ LANGUAGES = {
         'ask_link': 'لینک درگاه پرداخت را وارد کنید:',
         'ask_shop_name': 'نام جدید فروشگاه را وارد کنید:',
         'ask_shop_logo': 'لطفا عکس لوگو را ارسال کنید:',
+        'ask_channel': 'آیدی کانال را وارد کنید (مانند @Channel):',
+        'ask_affiliate': 'درصد پورسانت معرفی را وارد کنید:',
         'success': 'عملیات با موفقیت انجام شد!',
-        'error': 'خطا در پردازش اطلاعات.'
+        'error': 'خطا در پردازش اطلاعات.',
+        'commission_earned': '🎉 تبریک! کاربری که شما دعوت کردید خرید انجام داد و شما ${amt} پورسانت دریافت کردید!'
     }
 }
 
@@ -328,12 +349,44 @@ def get_t(uid, key):
 
 admin_states = {}
 
+def check_join(uid, chat_id):
+    if str(uid) == str(ADMIN_ID): return True
+    channel = db['settings'].get('shop_channel')
+    if not channel: return True
+    try:
+        status = bot.get_chat_member(channel, uid).status
+        if status in ['creator', 'administrator', 'member']:
+            return True
+    except ApiTelegramException:
+        pass
+        
+    markup = types.InlineKeyboardMarkup()
+    markup.add(types.InlineKeyboardButton("Join Channel / عضویت", url=f"https://t.me/{channel.replace('@','')}"))
+    markup.add(types.InlineKeyboardButton(get_t(uid, 'verify_join'), callback_data="verify_join"))
+    bot.send_message(chat_id, get_t(uid, 'force_join'), reply_markup=markup)
+    return False
+
+def add_commission(buyer_uid, amount):
+    referrer = db['users'][buyer_uid].get('referred_by')
+    if referrer and referrer in db['users']:
+        pct = float(db['settings'].get('affiliate_percent', 10))
+        reward = (amount * pct) / 100.0
+        if reward > 0:
+            db['users'][referrer]['balance'] += reward
+            save_db()
+            bot.send_message(referrer, get_t(referrer, 'commission_earned').format(amt=reward))
+
 @bot.message_handler(commands=['start', 'lang'])
 def send_welcome(message):
     uid = str(message.from_user.id)
+    args = message.text.split()
+    referrer = args[1] if len(args) > 1 and args[1] != uid else None
+    
     if uid not in db['users']:
-        db['users'][uid] = {'lang': 'en', 'balance': 0, 'phone': 'Not Set', 'purchases': [], 'name': message.from_user.first_name}
+        db['users'][uid] = {'lang': 'en', 'balance': 0, 'phone': 'Not Set', 'purchases': [], 'name': message.from_user.first_name, 'referred_by': referrer}
         save_db()
+        
+    if not check_join(uid, message.chat.id): return
         
     markup = types.InlineKeyboardMarkup()
     markup.add(types.InlineKeyboardButton("🇬🇧 English", callback_data="lang_en"),
@@ -359,7 +412,15 @@ def callback_query(call):
     bot.delete_message(call.message.chat.id, call.message.message_id)
     show_main_menu(call.message.chat.id, uid)
 
+@bot.callback_query_handler(func=lambda call: call.data == 'verify_join')
+def verify_join(call):
+    uid = str(call.from_user.id)
+    if check_join(uid, call.message.chat.id):
+        bot.delete_message(call.message.chat.id, call.message.message_id)
+        show_main_menu(call.message.chat.id, uid)
+
 def show_main_menu(chat_id, uid):
+    if not check_join(uid, chat_id): return
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     markup.add(types.KeyboardButton(get_t(uid, 'products')), types.KeyboardButton(get_t(uid, 'balance')))
     markup.add(types.KeyboardButton(get_t(uid, 'purchases')), types.KeyboardButton(get_t(uid, 'account')))
@@ -373,6 +434,7 @@ def show_main_menu(chat_id, uid):
 @bot.message_handler(content_types=['contact'])
 def contact_handler(message):
     uid = str(message.from_user.id)
+    if not check_join(uid, message.chat.id): return
     db['users'][uid]['phone'] = message.contact.phone_number
     save_db()
     bot.reply_to(message, get_t(uid, 'phone_saved'))
@@ -391,6 +453,7 @@ def photo_handler(message):
 @bot.message_handler(func=lambda message: True)
 def text_handler(message):
     uid = str(message.from_user.id)
+    if not check_join(uid, message.chat.id): return
     text = message.text
     
     state = admin_states.get(uid)
@@ -417,9 +480,16 @@ def text_handler(message):
         u = db['users'][uid]
         msg = get_t(uid, 'acc_details').format(name=u.get('name',''), id=uid, phone=u.get('phone','N/A'), bal=u.get('balance',0))
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        markup.add(types.KeyboardButton(get_t(uid, 'invite_friends')))
         markup.add(types.KeyboardButton(get_t(uid, 'share_phone'), request_contact=True))
         markup.add(types.KeyboardButton("Back"))
         bot.reply_to(message, msg, reply_markup=markup)
+        
+    elif text in [LANGUAGES['en']['invite_friends'], LANGUAGES['fa']['invite_friends']]:
+        bot_info = bot.get_me()
+        link = f"https://t.me/{bot_info.username}?start={uid}"
+        pct = db['settings'].get('affiliate_percent', 10)
+        bot.reply_to(message, get_t(uid, 'invite_text').format(pct=pct, link=link))
         
     elif text == "Back":
         show_main_menu(message.chat.id, uid)
@@ -437,18 +507,21 @@ def text_handler(message):
         
     elif text in [LANGUAGES['en']['admin_panel'], LANGUAGES['fa']['admin_panel']] and uid == str(ADMIN_ID):
         markup = types.InlineKeyboardMarkup()
-        markup.add(types.InlineKeyboardButton(get_t(uid, 'set_name'), callback_data="admin_setname"))
-        markup.add(types.InlineKeyboardButton(get_t(uid, 'set_logo'), callback_data="admin_setlogo"))
-        markup.add(types.InlineKeyboardButton(get_t(uid, 'add_product'), callback_data="admin_addprod"))
-        markup.add(types.InlineKeyboardButton(get_t(uid, 'assign_product'), callback_data="admin_assign"))
+        markup.add(types.InlineKeyboardButton(get_t(uid, 'set_name'), callback_data="admin_setname"),
+                   types.InlineKeyboardButton(get_t(uid, 'set_logo'), callback_data="admin_setlogo"))
+        markup.add(types.InlineKeyboardButton(get_t(uid, 'set_channel'), callback_data="admin_setchannel"),
+                   types.InlineKeyboardButton(get_t(uid, 'set_affiliate'), callback_data="admin_setaffiliate"))
+        markup.add(types.InlineKeyboardButton(get_t(uid, 'add_product'), callback_data="admin_addprod"),
+                   types.InlineKeyboardButton(get_t(uid, 'assign_product'), callback_data="admin_assign"))
         markup.add(types.InlineKeyboardButton(get_t(uid, 'add_balance'), callback_data="admin_bal"))
-        markup.add(types.InlineKeyboardButton(get_t(uid, 'set_card'), callback_data="admin_setcard"))
-        markup.add(types.InlineKeyboardButton(get_t(uid, 'set_link'), callback_data="admin_setlink"))
+        markup.add(types.InlineKeyboardButton(get_t(uid, 'set_card'), callback_data="admin_setcard"),
+                   types.InlineKeyboardButton(get_t(uid, 'set_link'), callback_data="admin_setlink"))
         bot.reply_to(message, get_t(uid, 'admin_menu'), reply_markup=markup)
 
 @bot.callback_query_handler(func=lambda call: True)
 def inline_handler(call):
     uid = str(call.from_user.id)
+    if call.data != "verify_join" and not check_join(uid, call.message.chat.id): return
     data = call.data
     
     if data.startswith("buy_"):
@@ -467,6 +540,7 @@ def inline_handler(call):
             db['users'][uid]['purchases'].append({"order_id": oid, "item": db['products'][pid]['name']})
             save_db()
             bot.answer_callback_query(call.id, get_t(uid, 'purchased_success').format(oid=oid), show_alert=True)
+            add_commission(uid, price)
         else:
             bot.answer_callback_query(call.id, get_t(uid, 'insufficient_bal'), show_alert=True)
             
@@ -484,6 +558,12 @@ def inline_handler(call):
     elif data == "admin_setlogo" and uid == str(ADMIN_ID):
         admin_states[uid] = 'awaiting_logo'
         bot.send_message(call.message.chat.id, get_t(uid, 'ask_shop_logo'))
+    elif data == "admin_setchannel" and uid == str(ADMIN_ID):
+        admin_states[uid] = 'awaiting_channel'
+        bot.send_message(call.message.chat.id, get_t(uid, 'ask_channel'))
+    elif data == "admin_setaffiliate" and uid == str(ADMIN_ID):
+        admin_states[uid] = 'awaiting_affiliate'
+        bot.send_message(call.message.chat.id, get_t(uid, 'ask_affiliate'))
     elif data == "admin_addprod" and uid == str(ADMIN_ID):
         admin_states[uid] = 'awaiting_prod_name'
         bot.send_message(call.message.chat.id, get_t(uid, 'ask_prod_name'))
@@ -500,7 +580,6 @@ def inline_handler(call):
         admin_states[uid] = 'awaiting_link'
         bot.send_message(call.message.chat.id, get_t(uid, 'ask_link'))
 
-# FSM Processor
 admin_temp = {}
 
 def process_admin_state(message, uid, state):
@@ -512,6 +591,18 @@ def process_admin_state(message, uid, state):
             admin_states[uid] = None
             bot.reply_to(message, get_t(uid, 'success'))
             show_main_menu(message.chat.id, uid)
+            
+        elif state == 'awaiting_channel':
+            db['settings']['shop_channel'] = text
+            save_db()
+            admin_states[uid] = None
+            bot.reply_to(message, get_t(uid, 'success'))
+            
+        elif state == 'awaiting_affiliate':
+            db['settings']['affiliate_percent'] = float(text)
+            save_db()
+            admin_states[uid] = None
+            bot.reply_to(message, get_t(uid, 'success'))
             
         elif state == 'awaiting_prod_name':
             admin_temp[uid] = {'prod_name': text}
@@ -549,6 +640,8 @@ def process_admin_state(message, uid, state):
             admin_states[uid] = None
             bot.reply_to(message, get_t(uid, 'success'))
             bot.send_message(target_uid, f"Admin delivered a purchase! Order ID: {oid}")
+            # If Admin manually assigns an item, we can't easily know the exact price paid (could be custom).
+            # So affiliate commission is only automated on Bot Balance purchases right now.
             
         elif state == 'awaiting_bal_uid':
             if text in db['users']:

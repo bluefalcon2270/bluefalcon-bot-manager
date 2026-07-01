@@ -1,7 +1,7 @@
 #!/bin/bash
 # ==============================================================================
 # BlueFalcon Telegram Bot - Bootstrap Installer
-# Version: v1.6
+# Version: v1.7
 # Description: Secure one-liner installation wrapper to prevent memory-execution 
 #              symlink failures.
 # ==============================================================================
