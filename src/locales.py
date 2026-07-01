@@ -103,8 +103,31 @@ LANG = {
     }
 }
 
+import database
+
 def t(lang, key, **kwargs):
     text = LANG.get(lang, LANG['en']).get(key, key)
+    
+    # Dynamic config overrides
+    if 'config' in database.db:
+        cfg = database.db['config']
+        if key == 'welcome':
+            text = cfg.get(f'welcome_{lang}', text)
+        elif key == 'card_transfer':
+            # We must override the formatting text completely to inject the new card
+            card_num = cfg.get('card_num', "1234")
+            card_name = cfg.get('card_name', "Admin")
+            if lang == 'fa':
+                text = f"🏦 *کارت به کارت*\n\nلطفا مبلغ را به کارت زیر واریز کنید:\n`{card_num}`\nبنام: {card_name}\n\n_پس از واریز، روی دکمه زیر کلیک کنید._"
+            else:
+                text = f"🏦 *Card Transfer*\n\nPlease transfer to:\n`{card_num}`\nName: {card_name}\n\n_After transferring, click below to submit your receipt._"
+        elif key == 'contact_support':
+            support = cfg.get('support_id', "@BlueFalconSupport")
+            if lang == 'fa':
+                text = f"📞 *پشتیبانی*\n\nارتباط با ما: {support}"
+            else:
+                text = f"📞 *Contact Support*\n\nReach us at: {support}"
+                
     if kwargs:
         return text.format(**kwargs)
     return text

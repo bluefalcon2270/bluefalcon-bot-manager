@@ -71,43 +71,131 @@ def on_message(message):
             )
             bot.send_message(config.ADMIN_ID, f"🧾 *New Receipt* from {uid}:\n`{text}`", reply_markup=mk, parse_mode='Markdown')
             
+    # Admin Product FSM
     elif state == 'WAIT_PROD_NAME':
         u['temp_data']['name'] = text
         set_user_state(uid, 'WAIT_PROD_PRICE', u['temp_data'])
-        bot.send_message(chat_id, t(l, 'enter_product_price'))
+        bot.send_message(chat_id, "💵 Enter price (numbers only):")
         
     elif state == 'WAIT_PROD_PRICE':
-        if not text.isdigit():
-            bot.send_message(chat_id, "Please enter numbers only.")
-            return
+        if not text.isdigit(): return bot.send_message(chat_id, "Numbers only.")
         pid = str(uuid.uuid4())[:8]
-        db['products'][pid] = {
-            'name': u['temp_data']['name'],
-            'price': float(text)
-        }
+        db['products'][pid] = {'name': u['temp_data']['name'], 'price': float(text)}
         save_db()
         set_user_state(uid, 'IDLE')
-        bot.send_message(chat_id, t(l, 'product_added'))
-        
+        bot.send_message(chat_id, "✅ Product saved!")
+
+    elif state == 'WAIT_PROD_EDIT_NAME':
+        pid = u['temp_data']['pid']
+        if pid in db['products']:
+            db['products'][pid]['name'] = text
+            save_db()
+        set_user_state(uid, 'IDLE')
+        bot.send_message(chat_id, "✅ Name updated!")
+
+    elif state == 'WAIT_PROD_EDIT_PRICE':
+        if not text.isdigit(): return bot.send_message(chat_id, "Numbers only.")
+        pid = u['temp_data']['pid']
+        if pid in db['products']:
+            db['products'][pid]['price'] = float(text)
+            save_db()
+        set_user_state(uid, 'IDLE')
+        bot.send_message(chat_id, "✅ Price updated!")
+
+    # Admin FAQ FSM
     elif state == 'WAIT_FAQ_Q':
         u['temp_data']['q'] = text
         set_user_state(uid, 'WAIT_FAQ_A', u['temp_data'])
-        bot.send_message(chat_id, t(l, 'enter_faq_a'))
+        bot.send_message(chat_id, "📝 Enter answer:")
         
     elif state == 'WAIT_FAQ_A':
         fid = str(uuid.uuid4())[:8]
-        db['faqs'][fid] = {
-            'q': u['temp_data']['q'],
-            'a': text
-        }
+        db['faqs'][fid] = {'q': u['temp_data']['q'], 'a': text}
         save_db()
         set_user_state(uid, 'IDLE')
-        bot.send_message(chat_id, t(l, 'faq_added'))
+        bot.send_message(chat_id, "✅ FAQ saved!")
+        
+    elif state == 'WAIT_FAQ_EDIT_Q':
+        fid = u['temp_data']['fid']
+        if fid in db['faqs']:
+            db['faqs'][fid]['q'] = text
+            save_db()
+        set_user_state(uid, 'IDLE')
+        bot.send_message(chat_id, "✅ Question updated!")
+
+    elif state == 'WAIT_FAQ_EDIT_A':
+        fid = u['temp_data']['fid']
+        if fid in db['faqs']:
+            db['faqs'][fid]['a'] = text
+            save_db()
+        set_user_state(uid, 'IDLE')
+        bot.send_message(chat_id, "✅ Answer updated!")
+
+    # Admin Config FSM
+    elif state.startswith('WAIT_ADMIN_CFG_'):
+        key = state.replace('WAIT_ADMIN_CFG_', '').lower()
+        if 'config' not in db: db['config'] = {}
+        db['config'][key] = text
+        save_db()
+        set_user_state(uid, 'IDLE')
+        bot.send_message(chat_id, "✅ Setting updated successfully!")
+
+    # Admin Broadcast FSM
+    elif state == 'WAIT_ADMIN_BROADCAST':
+        set_user_state(uid, 'IDLE')
+        bot.send_message(chat_id, "⏳ Sending broadcast...")
+        sent = 0
+        for user_id in db['users']:
+            try:
+                bot.send_message(user_id, text)
+                sent += 1
+            except:
+                pass
+        bot.send_message(chat_id, f"✅ Broadcast sent to {sent} users!")
+
+    # Admin Manage User FSM
+    elif state == 'WAIT_ADMIN_USER_ID':
+        if text not in db['users']:
+            set_user_state(uid, 'IDLE')
+            return bot.send_message(chat_id, "❌ User not found in DB.")
+        
+        target = db['users'][text]
+        set_user_state(uid, 'IDLE')
+        mk = types.InlineKeyboardMarkup()
+        mk.row(
+            types.InlineKeyboardButton("➕ Add $", callback_data=f"adminuser_add_{text}"),
+            types.InlineKeyboardButton("➖ Deduct $", callback_data=f"adminuser_sub_{text}")
+        )
+        mk.add(types.InlineKeyboardButton("◀️ Back", callback_data="menu_admin"))
+        
+        info = f"👤 *User:* `{text}`\n💰 *Balance:* {target.get('balance', 0)}\n🛍 *Purchases:* {target.get('purchases', 0)}\n🗣 *Language:* {target.get('lang', 'en')}"
+        bot.send_message(chat_id, info, reply_markup=mk, parse_mode='Markdown')
+
+    elif state == 'WAIT_ADMIN_USER_ADD_BAL':
+        if not text.replace('.','',1).isdigit(): return bot.send_message(chat_id, "Numbers only.")
+        target_uid = u['temp_data']['target']
+        if target_uid in db['users']:
+            db['users'][target_uid]['balance'] += float(text)
+            save_db()
+            bot.send_message(chat_id, f"✅ Added {text} to user {target_uid}.")
+        set_user_state(uid, 'IDLE')
+
+    elif state == 'WAIT_ADMIN_USER_SUB_BAL':
+        if not text.replace('.','',1).isdigit(): return bot.send_message(chat_id, "Numbers only.")
+        target_uid = u['temp_data']['target']
+        if target_uid in db['users']:
+            db['users'][target_uid]['balance'] -= float(text)
+            save_db()
+            bot.send_message(chat_id, f"✅ Deducted {text} from user {target_uid}.")
+        set_user_state(uid, 'IDLE')
 
 @bot.callback_query_handler(func=lambda call: True)
 def on_callback(call):
     # Route admin callbacks if admin
-    if str(call.from_user.id) == str(config.ADMIN_ID) and (call.data.startswith('admin_') or call.data.startswith('del') or call.data.startswith('approve_') or call.data.startswith('reject_') or call.data == 'menu_admin'):
+    admin_prefixes = ['admin', 'del', 'approve_', 'reject_', 'edit', 'menu_admin']
+    is_admin_call = any(call.data.startswith(p) for p in admin_prefixes)
+    
+    if str(call.from_user.id) == str(config.ADMIN_ID) and is_admin_call:
         handle_admin_callback(call)
     else:
         handle_callback_user(call)
