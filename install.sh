@@ -110,7 +110,7 @@ ensure_curl() {
 
 download_payload() {
     mkdir -p "$BOT_DIR"
-    curl -sSLo "$MAIN_SCRIPT_DEST" "$REMOTE_URL"
+    curl -sSLo "$MAIN_SCRIPT_DEST" "${REMOTE_URL}?v=$(date +%s)"
     chmod +x "$MAIN_SCRIPT_DEST"
 }
 
