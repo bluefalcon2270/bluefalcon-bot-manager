@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## v4.0.0 (Ultimate Admin Panel Overhaul):
+- **Dynamic Configuration**: Removed hardcoded text from `locales.py`. The Welcome message, Card details, and Support handle can now be edited dynamically directly from the Admin Panel.
+- **Bot Statistics**: Added a new dashboard showing total users, system balance, active products, and FAQs.
+- **Manage Users**: Added the ability to search for any user by their Telegram ID, view their profile, and manually add or deduct funds from their balance.
+- **Broadcast System**: The admin can now broadcast a global message to all users in the database at once.
+- **Nested Menus**: Cleaned up the Admin Panel into organized sub-menus. Products and FAQs now have dedicated nested menus where they can be added, edited (name/price/question/answer), and removed.
+- **Enhanced State Machine**: Expanded the FSM in `main.py` with 13 new `WAIT_` states to handle dynamic text input for the new admin features.
+
 ## v3.7.1 (Hotfix):
 - Fixed a callback routing bug where the `menu_admin` button was being incorrectly passed to the user callback handler instead of the admin callback handler, causing the Admin Panel to not open.
 
