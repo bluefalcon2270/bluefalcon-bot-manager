@@ -437,6 +437,22 @@ def verify_join(call):
         bot.delete_message(call.message.chat.id, call.message.message_id)
         show_main_menu(call.message.chat.id, uid)
 
+def show_admin_menu(chat_id, uid):
+    if str(uid) != str(ADMIN_ID): return
+    markup = types.InlineKeyboardMarkup()
+    markup.add(types.InlineKeyboardButton(get_t(uid, 'set_name'), callback_data="admin_setname"),
+               types.InlineKeyboardButton(get_t(uid, 'set_logo'), callback_data="admin_setlogo"))
+    markup.add(types.InlineKeyboardButton(get_t(uid, 'set_channel'), callback_data="admin_setchannel"),
+               types.InlineKeyboardButton(get_t(uid, 'set_affiliate'), callback_data="admin_setaffiliate"))
+    markup.add(types.InlineKeyboardButton(get_t(uid, 'add_product'), callback_data="admin_addprod"),
+               types.InlineKeyboardButton(get_t(uid, 'manage_products'), callback_data="admin_manageprod"))
+    markup.add(types.InlineKeyboardButton(get_t(uid, 'broadcast'), callback_data="admin_broadcast"))
+    markup.add(types.InlineKeyboardButton(get_t(uid, 'assign_product'), callback_data="admin_assign"),
+               types.InlineKeyboardButton(get_t(uid, 'add_balance'), callback_data="admin_bal"))
+    markup.add(types.InlineKeyboardButton(get_t(uid, 'set_card'), callback_data="admin_setcard"),
+               types.InlineKeyboardButton(get_t(uid, 'set_link'), callback_data="admin_setlink"))
+    bot.send_message(chat_id, get_t(uid, 'admin_menu'), reply_markup=markup)
+
 def show_main_menu(chat_id, uid):
     if not check_join(uid, chat_id): return
     user_states[uid] = None
@@ -479,6 +495,7 @@ def photo_handler(message):
                 save_db()
                 admin_states[uid] = None
                 bot.reply_to(message, get_t(uid, 'success'))
+                show_admin_menu(message.chat.id, uid)
             return
         elif state == 'awaiting_broadcast':
             photo_id = message.photo[-1].file_id
@@ -492,6 +509,7 @@ def photo_handler(message):
                     pass
             admin_states[uid] = None
             bot.reply_to(message, get_t(uid, 'broadcast_success').format(count=count))
+            show_admin_menu(message.chat.id, uid)
             return
             
     # If user is in support mode and sends a photo, forward it
@@ -537,11 +555,12 @@ def text_handler(message):
         if not db['products']:
             bot.reply_to(message, get_t(uid, 'no_products'))
         else:
+            bal = db['users'][uid]['balance']
             for pid, p in db['products'].items():
                 markup = types.InlineKeyboardMarkup()
                 markup.add(types.InlineKeyboardButton(f"Buy - ${p['price']}", callback_data=f"buy_{pid}"))
                 desc = p.get('desc', '')
-                msg_text = f"🛍 **{p['name']}**\n💰 Price: ${p['price']}\n\n{desc}"
+                msg_text = f"🛍 **{p['name']}**\n💰 Price: ${p['price']}\n💳 Your Balance: ${bal}\n\n{desc}"
                 
                 if p.get('photo'):
                     bot.send_photo(message.chat.id, p['photo'], caption=msg_text, reply_markup=markup, parse_mode="Markdown")
@@ -587,19 +606,7 @@ def text_handler(message):
         bot.reply_to(message, get_t(uid, 'support_msg'), reply_markup=markup)
         
     elif text in [LANGUAGES['en']['admin_panel'], LANGUAGES['fa']['admin_panel']] and uid == str(ADMIN_ID):
-        markup = types.InlineKeyboardMarkup()
-        markup.add(types.InlineKeyboardButton(get_t(uid, 'set_name'), callback_data="admin_setname"),
-                   types.InlineKeyboardButton(get_t(uid, 'set_logo'), callback_data="admin_setlogo"))
-        markup.add(types.InlineKeyboardButton(get_t(uid, 'set_channel'), callback_data="admin_setchannel"),
-                   types.InlineKeyboardButton(get_t(uid, 'set_affiliate'), callback_data="admin_setaffiliate"))
-        markup.add(types.InlineKeyboardButton(get_t(uid, 'add_product'), callback_data="admin_addprod"),
-                   types.InlineKeyboardButton(get_t(uid, 'manage_products'), callback_data="admin_manageprod"))
-        markup.add(types.InlineKeyboardButton(get_t(uid, 'broadcast'), callback_data="admin_broadcast"))
-        markup.add(types.InlineKeyboardButton(get_t(uid, 'assign_product'), callback_data="admin_assign"),
-                   types.InlineKeyboardButton(get_t(uid, 'add_balance'), callback_data="admin_bal"))
-        markup.add(types.InlineKeyboardButton(get_t(uid, 'set_card'), callback_data="admin_setcard"),
-                   types.InlineKeyboardButton(get_t(uid, 'set_link'), callback_data="admin_setlink"))
-        bot.reply_to(message, get_t(uid, 'admin_menu'), reply_markup=markup)
+        show_admin_menu(message.chat.id, uid)
 
 @bot.callback_query_handler(func=lambda call: True)
 def inline_handler(call):
@@ -609,13 +616,6 @@ def inline_handler(call):
     
     if data.startswith("buy_"):
         pid = data.split('_')[1]
-        markup = types.InlineKeyboardMarkup()
-        markup.add(types.InlineKeyboardButton(get_t(uid, 'pay_bot'), callback_data=f"paybot_{pid}"))
-        markup.add(types.InlineKeyboardButton(get_t(uid, 'pay_direct'), callback_data=f"paydir_{pid}"))
-        bot.edit_message_text(get_t(uid, 'payment_methods'), call.message.chat.id, call.message.message_id, reply_markup=markup)
-        
-    elif data.startswith("paybot_"):
-        pid = data.split('_')[1]
         price = db['products'][pid]['price']
         if db['users'][uid]['balance'] >= price:
             db['users'][uid]['balance'] -= price
@@ -624,12 +624,15 @@ def inline_handler(call):
             save_db()
             bot.answer_callback_query(call.id, get_t(uid, 'purchased_success').format(oid=oid), show_alert=True)
             add_commission(uid, price)
+            show_main_menu(call.message.chat.id, uid)
         else:
             bot.answer_callback_query(call.id, get_t(uid, 'insufficient_bal'), show_alert=True)
+            markup = types.InlineKeyboardMarkup()
+            markup.add(types.InlineKeyboardButton("Add Funds", callback_data="addfunds"))
+            bot.send_message(call.message.chat.id, "Please add funds to your balance to buy this product.", reply_markup=markup)
             
-    elif data.startswith("paydir_") or data == "addfunds":
-        pid = data.split('_')[1] if "paydir_" in data else "Funds"
-        price = db['products'][pid]['price'] if "paydir_" in data else "Any Amount"
+    elif data == "addfunds":
+        price = "Any Amount"
         s = db['settings']
         msg = get_t(uid, 'card_info').format(price=price, card=s['admin_card'], name=s['admin_name'], link=s['direct_link'])
         bot.send_message(call.message.chat.id, msg)
@@ -665,6 +668,7 @@ def inline_handler(call):
             save_db()
             bot.answer_callback_query(call.id, "Product Deleted!", show_alert=True)
             bot.delete_message(call.message.chat.id, call.message.message_id)
+            show_admin_menu(call.message.chat.id, uid)
     elif data == "admin_broadcast" and uid == str(ADMIN_ID):
         admin_states[uid] = 'awaiting_broadcast'
         bot.send_message(call.message.chat.id, get_t(uid, 'ask_broadcast'))
@@ -698,12 +702,14 @@ def process_admin_state(message, uid, state):
             save_db()
             admin_states[uid] = None
             bot.reply_to(message, get_t(uid, 'success'))
+            show_admin_menu(message.chat.id, uid)
             
         elif state == 'awaiting_affiliate':
             db['settings']['affiliate_percent'] = float(text)
             save_db()
             admin_states[uid] = None
             bot.reply_to(message, get_t(uid, 'success'))
+            show_admin_menu(message.chat.id, uid)
             
         elif state == 'awaiting_prod_name':
             admin_temp[uid] = {'prod_name': text}
@@ -738,6 +744,7 @@ def process_admin_state(message, uid, state):
                     pass
             admin_states[uid] = None
             bot.reply_to(message, get_t(uid, 'broadcast_success').format(count=count))
+            show_admin_menu(message.chat.id, uid)
             
         elif state == 'awaiting_assign_uid':
             if text in db['users']:
@@ -747,6 +754,7 @@ def process_admin_state(message, uid, state):
             else:
                 bot.reply_to(message, "User not found.")
                 admin_states[uid] = None
+                show_admin_menu(message.chat.id, uid)
                 
         elif state == 'awaiting_assign_oid':
             admin_temp[uid]['assign_oid'] = text
@@ -762,6 +770,7 @@ def process_admin_state(message, uid, state):
             admin_states[uid] = None
             bot.reply_to(message, get_t(uid, 'success'))
             bot.send_message(target_uid, f"Admin delivered a purchase! Order ID: {oid}")
+            show_admin_menu(message.chat.id, uid)
             
         elif state == 'awaiting_bal_uid':
             if text in db['users']:
@@ -771,6 +780,7 @@ def process_admin_state(message, uid, state):
             else:
                 bot.reply_to(message, "User not found.")
                 admin_states[uid] = None
+                show_admin_menu(message.chat.id, uid)
                 
         elif state == 'awaiting_bal_amt':
             amt = float(text)
@@ -780,6 +790,7 @@ def process_admin_state(message, uid, state):
             admin_states[uid] = None
             bot.reply_to(message, get_t(uid, 'success'))
             bot.send_message(target_uid, f"Your balance increased by ${amt}")
+            show_admin_menu(message.chat.id, uid)
             
         elif state == 'awaiting_card_num':
             admin_temp[uid] = {'card_num': text}
@@ -792,12 +803,14 @@ def process_admin_state(message, uid, state):
             save_db()
             admin_states[uid] = None
             bot.reply_to(message, get_t(uid, 'success'))
+            show_admin_menu(message.chat.id, uid)
             
         elif state == 'awaiting_link':
             db['settings']['direct_link'] = text
             save_db()
             admin_states[uid] = None
             bot.reply_to(message, get_t(uid, 'success'))
+            show_admin_menu(message.chat.id, uid)
             
     except Exception as e:
         bot.reply_to(message, get_t(uid, 'error'))
