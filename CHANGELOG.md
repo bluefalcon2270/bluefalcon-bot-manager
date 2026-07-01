@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+v1.9:
+- bump versioning system to +0.1 increments.
+- add 🔄 Restart Bot button to the main Telegram menu for users.
+- streamline purchase flow to bypass payment method selection.
+
 v1.8:
 - add Mass Broadcast System to send text and photo messages to all users.
 - add Rich Products feature (Products now support photos and descriptions).

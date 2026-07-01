@@ -1,7 +1,7 @@
 #!/bin/bash
 # ==============================================================================
 # BlueFalcon Telegram Bot
-# Version: v1.8
+# Version: v1.9
 # Description: Expert-grade Linux deployment script for Telegram Bots.
 # ==============================================================================
 
@@ -10,7 +10,7 @@ set -eEu -o pipefail
 # ==========================================
 # CONSTANTS & COLORS
 # ==========================================
-readonly SCRIPT_VERSION="v1.8"
+readonly SCRIPT_VERSION="v1.9"
 readonly CONFIG_DIR="/etc/bluefalcon"
 readonly CONFIG_FILE="${CONFIG_DIR}/config.conf"
 readonly LOG_FILE="/var/log/bluefalcon-script.log"
@@ -294,7 +294,8 @@ LANGUAGES = {
         'ask_affiliate': 'Enter Affiliate Commission Percentage (e.g. 10):',
         'success': 'Action completed successfully!',
         'error': 'Error processing your request.',
-        'commission_earned': '🎉 Congratulations! A friend you invited made a purchase. You earned ${amt} commission!'
+        'commission_earned': '🎉 Congratulations! A friend you invited made a purchase. You earned ${amt} commission!',
+        'restart': '🔄 Restart Bot'
     },
     'fa': {
         'welcome': 'به {shop} خوش آمدید!',
@@ -355,7 +356,8 @@ LANGUAGES = {
         'ask_affiliate': 'درصد پورسانت معرفی را وارد کنید:',
         'success': 'عملیات با موفقیت انجام شد!',
         'error': 'خطا در پردازش اطلاعات.',
-        'commission_earned': '🎉 تبریک! کاربری که شما دعوت کردید خرید انجام داد و شما ${amt} پورسانت دریافت کردید!'
+        'commission_earned': '🎉 تبریک! کاربری که شما دعوت کردید خرید انجام داد و شما ${amt} پورسانت دریافت کردید!',
+        'restart': '🔄 شروع مجدد ربات'
     }
 }
 
@@ -459,7 +461,7 @@ def show_main_menu(chat_id, uid):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     markup.add(types.KeyboardButton(get_t(uid, 'products')), types.KeyboardButton(get_t(uid, 'balance')))
     markup.add(types.KeyboardButton(get_t(uid, 'purchases')), types.KeyboardButton(get_t(uid, 'account')))
-    markup.add(types.KeyboardButton(get_t(uid, 'support')))
+    markup.add(types.KeyboardButton(get_t(uid, 'support')), types.KeyboardButton(get_t(uid, 'restart')))
     if str(uid) == str(ADMIN_ID):
         markup.add(types.KeyboardButton(get_t(uid, 'admin_panel')))
     
@@ -595,6 +597,10 @@ def text_handler(message):
         
     elif text == "Back":
         show_main_menu(message.chat.id, uid)
+        
+    elif text in [LANGUAGES['en']['restart'], LANGUAGES['fa']['restart']]:
+        message.text = "/start"
+        send_welcome(message)
         
     elif text in [LANGUAGES['en']['purchases'], LANGUAGES['fa']['purchases']]:
         purchases = db['users'][uid].get('purchases', [])
