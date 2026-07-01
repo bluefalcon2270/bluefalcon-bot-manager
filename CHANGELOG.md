@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## v3.7.0 (Menu Restructure & Language Settings):
+- Streamlined the Main Menu by moving "Increase Balance" (formerly Add Funds) and "Invite Friend" into the "My Account" section.
+- Added a dedicated "Change Language" (🌍) button inside the "My Account" menu, allowing users to toggle between English and Persian at any time.
+
 ## v3.6.0 (Unified Interface Rewrite):
 - Removed the separate top welcome message block entirely.
 - Merged the rich welcome text directly into the main menu inline keyboard block. This guarantees the message bubble is wide enough to frame the menu perfectly.

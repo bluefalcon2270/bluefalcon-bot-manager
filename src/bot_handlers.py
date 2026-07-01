@@ -34,10 +34,7 @@ def send_inline_main_menu(chat_id, uid):
         types.InlineKeyboardButton(t(l, 'btn_products'), callback_data='menu_products'),
         types.InlineKeyboardButton(t(l, 'btn_account'), callback_data='menu_account')
     )
-    mk.row(
-        types.InlineKeyboardButton(t(l, 'btn_add_funds'), callback_data='menu_add_funds'),
-        types.InlineKeyboardButton(t(l, 'btn_invite'), callback_data='menu_invite')
-    )
+
     mk.row(
         types.InlineKeyboardButton(t(l, 'btn_faq'), callback_data='menu_faq'),
         types.InlineKeyboardButton(t(l, 'btn_support'), callback_data='menu_support')
@@ -106,9 +103,14 @@ def handle_callback_user(call):
             types.InlineKeyboardButton(t(l, 'btn_add_funds'), callback_data='menu_add_funds'),
             types.InlineKeyboardButton(t(l, 'btn_invite'), callback_data='menu_invite')
         )
+        mk.add(types.InlineKeyboardButton(t(l, 'btn_change_lang'), callback_data='menu_change_lang'))
         mk.add(types.InlineKeyboardButton(t(l, 'btn_back'), callback_data='menu_main'))
         text = t(l, 'my_account', balance=u['balance'], purchases=u['purchases'], invites=u['invites'], active_invites=u['active_invites'])
         bot.edit_message_text(text, chat_id, call.message.message_id, reply_markup=mk)
+        
+    elif data == 'menu_change_lang':
+        bot.delete_message(chat_id, call.message.message_id)
+        send_language_selection(chat_id)
         
     elif data == 'menu_add_funds':
         mk = types.InlineKeyboardMarkup()
