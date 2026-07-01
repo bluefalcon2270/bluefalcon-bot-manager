@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+v1.8:
+- add Mass Broadcast System to send text and photo messages to all users.
+- add Rich Products feature (Products now support photos and descriptions).
+- add In-Bot Support Desk (users message bot, admin replies natively via Telegram forwarding).
+- add Manage Products admin menu to view and delete products.
+- upgrade product UI layout to display rich media and captions cleanly.
+
 v1.7:
 - add Mandatory Channel Join (Force Join) feature to enforce channel subscriptions.
 - add Affiliate Marketing Engine with unique referral links.

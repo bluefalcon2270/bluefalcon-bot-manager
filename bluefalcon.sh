@@ -1,7 +1,7 @@
 #!/bin/bash
 # ==============================================================================
 # BlueFalcon Telegram Bot
-# Version: v1.7
+# Version: v1.8
 # Description: Expert-grade Linux deployment script for Telegram Bots.
 # ==============================================================================
 
@@ -10,7 +10,7 @@ set -eEu -o pipefail
 # ==========================================
 # CONSTANTS & COLORS
 # ==========================================
-readonly SCRIPT_VERSION="v1.7"
+readonly SCRIPT_VERSION="v1.8"
 readonly CONFIG_DIR="/etc/bluefalcon"
 readonly CONFIG_FILE="${CONFIG_DIR}/config.conf"
 readonly LOG_FILE="/var/log/bluefalcon-script.log"
@@ -260,18 +260,26 @@ LANGUAGES = {
         'no_purchases': 'No purchases yet.',
         'force_join': '⚠️ You must join our channel to use this bot!',
         'verify_join': 'I Joined (Verify)',
+        'support_msg': 'Please type your question or message below. Our support team will reply to you here as soon as possible.',
+        'support_sent': '✅ Your message has been sent to the admin. Please wait for a reply.',
         'admin_menu': 'Admin Panel:',
         'set_name': 'Set Shop Name',
         'set_logo': 'Set Shop Logo',
         'set_channel': 'Set Shop Channel',
         'set_affiliate': 'Set Affiliate %',
         'add_product': 'Add Product',
+        'manage_products': 'Manage Products',
+        'broadcast': 'Broadcast Message',
         'add_balance': 'Add User Balance',
         'assign_product': 'Assign Product',
         'set_card': 'Set Card Info',
         'set_link': 'Set Direct Link',
         'ask_prod_name': 'Please enter the Product Name:',
         'ask_prod_price': 'Please enter the Product Price (Number):',
+        'ask_prod_desc': 'Please enter the Product Description:',
+        'ask_prod_photo': 'Please send a Photo for the Product:',
+        'ask_broadcast': 'Send me the message (Text or Photo) you want to broadcast to ALL users:',
+        'broadcast_success': 'Broadcast sent to {count} users!',
         'ask_assign_uid': 'Enter User ID to assign product to:',
         'ask_assign_oid': 'Enter a unique Order ID (e.g. PayNo123):',
         'ask_assign_item': 'Enter the Product Name to deliver:',
@@ -313,18 +321,26 @@ LANGUAGES = {
         'no_purchases': 'خریدی ثبت نشده.',
         'force_join': '⚠️ برای استفاده از ربات باید عضو کانال ما شوید!',
         'verify_join': 'عضو شدم (تایید)',
+        'support_msg': 'لطفا پیام یا سوال خود را تایپ کنید. تیم پشتیبانی در همین جا به شما پاسخ خواهد داد.',
+        'support_sent': '✅ پیام شما برای ادمین ارسال شد. لطفا منتظر پاسخ باشید.',
         'admin_menu': 'پنل مدیریت:',
         'set_name': 'تنظیم نام فروشگاه',
         'set_logo': 'تنظیم لوگو فروشگاه',
         'set_channel': 'تنظیم آیدی کانال',
         'set_affiliate': 'تنظیم درصد پورسانت',
         'add_product': 'افزودن محصول',
+        'manage_products': 'مدیریت محصولات',
+        'broadcast': 'ارسال پیام همگانی',
         'add_balance': 'افزایش موجودی کاربر',
         'assign_product': 'ثبت خرید کاربر',
         'set_card': 'تنظیمات کارت بانکی',
         'set_link': 'تنظیمات درگاه',
         'ask_prod_name': 'لطفا نام محصول را وارد کنید:',
         'ask_prod_price': 'لطفا قیمت محصول را وارد کنید:',
+        'ask_prod_desc': 'لطفا توضیحات محصول را وارد کنید:',
+        'ask_prod_photo': 'لطفا عکس محصول را ارسال کنید:',
+        'ask_broadcast': 'پیام خود (متن یا عکس) را برای ارسال به تمامی کاربران بفرستید:',
+        'broadcast_success': 'پیام به {count} کاربر ارسال شد!',
         'ask_assign_uid': 'آیدی کاربر را وارد کنید:',
         'ask_assign_oid': 'شماره سفارش را وارد کنید:',
         'ask_assign_item': 'نام محصول را وارد کنید:',
@@ -348,6 +364,7 @@ def get_t(uid, key):
     return LANGUAGES[lang].get(key, LANGUAGES['en'].get(key, key))
 
 admin_states = {}
+user_states = {}
 
 def check_join(uid, chat_id):
     if str(uid) == str(ADMIN_ID): return True
@@ -387,6 +404,7 @@ def send_welcome(message):
         save_db()
         
     if not check_join(uid, message.chat.id): return
+    user_states[uid] = None
         
     markup = types.InlineKeyboardMarkup()
     markup.add(types.InlineKeyboardButton("🇬🇧 English", callback_data="lang_en"),
@@ -421,6 +439,7 @@ def verify_join(call):
 
 def show_main_menu(chat_id, uid):
     if not check_join(uid, chat_id): return
+    user_states[uid] = None
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     markup.add(types.KeyboardButton(get_t(uid, 'products')), types.KeyboardButton(get_t(uid, 'balance')))
     markup.add(types.KeyboardButton(get_t(uid, 'purchases')), types.KeyboardButton(get_t(uid, 'account')))
@@ -443,12 +462,45 @@ def contact_handler(message):
 @bot.message_handler(content_types=['photo'])
 def photo_handler(message):
     uid = str(message.from_user.id)
-    if uid == str(ADMIN_ID) and admin_states.get(uid) == 'awaiting_logo':
-        db['settings']['shop_logo'] = message.photo[-1].file_id
-        save_db()
-        admin_states[uid] = None
-        bot.reply_to(message, get_t(uid, 'success'))
-        show_main_menu(message.chat.id, uid)
+    
+    if uid == str(ADMIN_ID):
+        state = admin_states.get(uid)
+        if state == 'awaiting_logo':
+            db['settings']['shop_logo'] = message.photo[-1].file_id
+            save_db()
+            admin_states[uid] = None
+            bot.reply_to(message, get_t(uid, 'success'))
+            show_main_menu(message.chat.id, uid)
+            return
+        elif state == 'awaiting_prod_photo':
+            pid = admin_temp.get(uid, {}).get('current_pid')
+            if pid:
+                db['products'][pid]['photo'] = message.photo[-1].file_id
+                save_db()
+                admin_states[uid] = None
+                bot.reply_to(message, get_t(uid, 'success'))
+            return
+        elif state == 'awaiting_broadcast':
+            photo_id = message.photo[-1].file_id
+            caption = message.caption if message.caption else ""
+            count = 0
+            for u in db['users']:
+                try:
+                    bot.send_photo(u, photo_id, caption=caption)
+                    count += 1
+                except:
+                    pass
+            admin_states[uid] = None
+            bot.reply_to(message, get_t(uid, 'broadcast_success').format(count=count))
+            return
+            
+    # If user is in support mode and sends a photo, forward it
+    if user_states.get(uid) == 'support':
+        forward_msg = bot.forward_message(ADMIN_ID, message.chat.id, message.message_id)
+        # Store metadata in admin's local db or text so admin can reply
+        bot.send_message(ADMIN_ID, f"Reply to the message above to answer User: {uid}", reply_to_message_id=forward_msg.message_id)
+        bot.reply_to(message, get_t(uid, 'support_sent'))
+        user_states[uid] = None
 
 @bot.message_handler(func=lambda message: True)
 def text_handler(message):
@@ -456,19 +508,45 @@ def text_handler(message):
     if not check_join(uid, message.chat.id): return
     text = message.text
     
-    state = admin_states.get(uid)
-    if state:
-        process_admin_state(message, uid, state)
+    # Handle Admin Reply to Support Ticket
+    if uid == str(ADMIN_ID) and message.reply_to_message:
+        reply = message.reply_to_message
+        if reply.forward_from:
+            target_uid = reply.forward_from.id
+            try:
+                bot.send_message(target_uid, f"👨‍💻 Support Reply:\n\n{text}")
+                bot.reply_to(message, "Reply sent to user!")
+            except:
+                bot.reply_to(message, "Failed to send reply. User might have blocked the bot.")
+            return
+    
+    if uid == str(ADMIN_ID):
+        state = admin_states.get(uid)
+        if state:
+            process_admin_state(message, uid, state)
+            return
+            
+    if user_states.get(uid) == 'support' and text != "Back":
+        forward_msg = bot.forward_message(ADMIN_ID, message.chat.id, message.message_id)
+        bot.send_message(ADMIN_ID, f"Reply to the message above to answer User: {uid}", reply_to_message_id=forward_msg.message_id)
+        bot.reply_to(message, get_t(uid, 'support_sent'))
+        user_states[uid] = None
         return
         
     if text in [LANGUAGES['en']['products'], LANGUAGES['fa']['products']]:
         if not db['products']:
             bot.reply_to(message, get_t(uid, 'no_products'))
         else:
-            markup = types.InlineKeyboardMarkup()
             for pid, p in db['products'].items():
-                markup.add(types.InlineKeyboardButton(f"{p['name']} - ${p['price']}", callback_data=f"buy_{pid}"))
-            bot.reply_to(message, get_t(uid, 'products'), reply_markup=markup)
+                markup = types.InlineKeyboardMarkup()
+                markup.add(types.InlineKeyboardButton(f"Buy - ${p['price']}", callback_data=f"buy_{pid}"))
+                desc = p.get('desc', '')
+                msg_text = f"🛍 **{p['name']}**\n💰 Price: ${p['price']}\n\n{desc}"
+                
+                if p.get('photo'):
+                    bot.send_photo(message.chat.id, p['photo'], caption=msg_text, reply_markup=markup, parse_mode="Markdown")
+                else:
+                    bot.send_message(message.chat.id, msg_text, reply_markup=markup, parse_mode="Markdown")
             
     elif text in [LANGUAGES['en']['balance'], LANGUAGES['fa']['balance']]:
         bal = db['users'][uid]['balance']
@@ -503,7 +581,10 @@ def text_handler(message):
             bot.reply_to(message, msg)
             
     elif text in [LANGUAGES['en']['support'], LANGUAGES['fa']['support']]:
-        bot.reply_to(message, db['settings']['support_info'])
+        user_states[uid] = 'support'
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        markup.add(types.KeyboardButton("Back"))
+        bot.reply_to(message, get_t(uid, 'support_msg'), reply_markup=markup)
         
     elif text in [LANGUAGES['en']['admin_panel'], LANGUAGES['fa']['admin_panel']] and uid == str(ADMIN_ID):
         markup = types.InlineKeyboardMarkup()
@@ -512,8 +593,10 @@ def text_handler(message):
         markup.add(types.InlineKeyboardButton(get_t(uid, 'set_channel'), callback_data="admin_setchannel"),
                    types.InlineKeyboardButton(get_t(uid, 'set_affiliate'), callback_data="admin_setaffiliate"))
         markup.add(types.InlineKeyboardButton(get_t(uid, 'add_product'), callback_data="admin_addprod"),
-                   types.InlineKeyboardButton(get_t(uid, 'assign_product'), callback_data="admin_assign"))
-        markup.add(types.InlineKeyboardButton(get_t(uid, 'add_balance'), callback_data="admin_bal"))
+                   types.InlineKeyboardButton(get_t(uid, 'manage_products'), callback_data="admin_manageprod"))
+        markup.add(types.InlineKeyboardButton(get_t(uid, 'broadcast'), callback_data="admin_broadcast"))
+        markup.add(types.InlineKeyboardButton(get_t(uid, 'assign_product'), callback_data="admin_assign"),
+                   types.InlineKeyboardButton(get_t(uid, 'add_balance'), callback_data="admin_bal"))
         markup.add(types.InlineKeyboardButton(get_t(uid, 'set_card'), callback_data="admin_setcard"),
                    types.InlineKeyboardButton(get_t(uid, 'set_link'), callback_data="admin_setlink"))
         bot.reply_to(message, get_t(uid, 'admin_menu'), reply_markup=markup)
@@ -567,6 +650,24 @@ def inline_handler(call):
     elif data == "admin_addprod" and uid == str(ADMIN_ID):
         admin_states[uid] = 'awaiting_prod_name'
         bot.send_message(call.message.chat.id, get_t(uid, 'ask_prod_name'))
+    elif data == "admin_manageprod" and uid == str(ADMIN_ID):
+        if not db['products']:
+            bot.send_message(call.message.chat.id, "No products to manage.")
+        else:
+            markup = types.InlineKeyboardMarkup()
+            for pid, p in db['products'].items():
+                markup.add(types.InlineKeyboardButton(f"❌ Delete {p['name']}", callback_data=f"delprod_{pid}"))
+            bot.send_message(call.message.chat.id, "Select a product to delete:", reply_markup=markup)
+    elif data.startswith("delprod_") and uid == str(ADMIN_ID):
+        pid = data.split('_')[1]
+        if pid in db['products']:
+            del db['products'][pid]
+            save_db()
+            bot.answer_callback_query(call.id, "Product Deleted!", show_alert=True)
+            bot.delete_message(call.message.chat.id, call.message.message_id)
+    elif data == "admin_broadcast" and uid == str(ADMIN_ID):
+        admin_states[uid] = 'awaiting_broadcast'
+        bot.send_message(call.message.chat.id, get_t(uid, 'ask_broadcast'))
     elif data == "admin_assign" and uid == str(ADMIN_ID):
         admin_states[uid] = 'awaiting_assign_uid'
         bot.send_message(call.message.chat.id, get_t(uid, 'ask_assign_uid'))
@@ -610,12 +711,33 @@ def process_admin_state(message, uid, state):
             bot.reply_to(message, get_t(uid, 'ask_prod_price'))
             
         elif state == 'awaiting_prod_price':
-            price = float(text)
+            admin_temp[uid]['prod_price'] = float(text)
+            admin_states[uid] = 'awaiting_prod_desc'
+            bot.reply_to(message, get_t(uid, 'ask_prod_desc'))
+            
+        elif state == 'awaiting_prod_desc':
             pid = str(uuid.uuid4())[:6]
-            db['products'][pid] = {"name": admin_temp[uid]['prod_name'], "price": price}
+            db['products'][pid] = {
+                "name": admin_temp[uid]['prod_name'], 
+                "price": admin_temp[uid]['prod_price'],
+                "desc": text,
+                "photo": None
+            }
             save_db()
+            admin_temp[uid]['current_pid'] = pid
+            admin_states[uid] = 'awaiting_prod_photo'
+            bot.reply_to(message, get_t(uid, 'ask_prod_photo'))
+            
+        elif state == 'awaiting_broadcast':
+            count = 0
+            for u in db['users']:
+                try:
+                    bot.send_message(u, text)
+                    count += 1
+                except:
+                    pass
             admin_states[uid] = None
-            bot.reply_to(message, get_t(uid, 'success'))
+            bot.reply_to(message, get_t(uid, 'broadcast_success').format(count=count))
             
         elif state == 'awaiting_assign_uid':
             if text in db['users']:
@@ -640,8 +762,6 @@ def process_admin_state(message, uid, state):
             admin_states[uid] = None
             bot.reply_to(message, get_t(uid, 'success'))
             bot.send_message(target_uid, f"Admin delivered a purchase! Order ID: {oid}")
-            # If Admin manually assigns an item, we can't easily know the exact price paid (could be custom).
-            # So affiliate commission is only automated on Bot Balance purchases right now.
             
         elif state == 'awaiting_bal_uid':
             if text in db['users']:
