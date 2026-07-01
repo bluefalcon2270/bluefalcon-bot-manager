@@ -1,7 +1,7 @@
 #!/bin/bash
 # ==============================================================================
 # BlueFalcon Telegram Bot
-# Version: v1.3
+# Version: v1.4
 # Description: Expert-grade Linux deployment script for Telegram Bots.
 # ==============================================================================
 
@@ -10,7 +10,7 @@ set -eEu -o pipefail
 # ==========================================
 # CONSTANTS & COLORS
 # ==========================================
-readonly SCRIPT_VERSION="v1.3"
+readonly SCRIPT_VERSION="v1.4"
 readonly CONFIG_DIR="/etc/bluefalcon"
 readonly CONFIG_FILE="${CONFIG_DIR}/config.conf"
 readonly LOG_FILE="/var/log/bluefalcon-script.log"
@@ -178,10 +178,12 @@ EOF
 
     cat << 'EOF' > main.py
 import os
+import json
 import telebot
 from telebot import types
 
 CONFIG_FILE = "/etc/bluefalcon/config.conf"
+USERS_FILE = "users.json"
 
 def load_config():
     config = {}
@@ -195,25 +197,96 @@ def load_config():
 
 config = load_config()
 BOT_TOKEN = config.get("BOT_TOKEN", "")
-MENU_BUTTONS = config.get("MENU_BUTTONS", "Help,About,Contact").split(',')
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
-@bot.message_handler(commands=['start'])
+if os.path.exists(USERS_FILE):
+    with open(USERS_FILE, 'r') as f:
+        try:
+            users = json.load(f)
+        except:
+            users = {}
+else:
+    users = {}
+
+def save_users():
+    with open(USERS_FILE, 'w') as f:
+        json.dump(users, f)
+
+LANGUAGES = {
+    'en': {
+        'welcome': 'Welcome to our Online Shop!',
+        'products': '🛍 Products',
+        'cart': '🛒 Cart',
+        'account': '👤 My Account',
+        'support': '📞 Support',
+        'lang_changed': 'Language changed to English 🇬🇧',
+        'no_products': 'No products available yet.',
+        'cart_empty': 'Your cart is empty.',
+        'acc_details': 'Account details...',
+        'contact_admin': 'Please contact the administrator.',
+        'unknown': 'Unknown command.'
+    },
+    'fa': {
+        'welcome': 'به فروشگاه آنلاین ما خوش آمدید!',
+        'products': '🛍 محصولات',
+        'cart': '🛒 سبد خرید',
+        'account': '👤 حساب کاربری',
+        'support': '📞 پشتیبانی',
+        'lang_changed': 'زبان به فارسی تغییر یافت 🇮🇷',
+        'no_products': 'هنوز محصولی موجود نیست.',
+        'cart_empty': 'سبد خرید شما خالی است.',
+        'acc_details': 'جزئیات حساب کاربری...',
+        'contact_admin': 'لطفا با ادمین تماس بگیرید.',
+        'unknown': 'دستور نامشخص.'
+    }
+}
+
+@bot.message_handler(commands=['start', 'lang'])
 def send_welcome(message):
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    row = []
-    for btn in MENU_BUTTONS:
-        if btn.strip():
-            row.append(types.KeyboardButton(btn.strip()))
-    if row:
-        markup.add(*row)
+    markup = types.InlineKeyboardMarkup()
+    markup.add(types.InlineKeyboardButton("🇬🇧 English", callback_data="lang_en"),
+               types.InlineKeyboardButton("🇮🇷 فارسی", callback_data="lang_fa"))
+    bot.reply_to(message, "Please select your language / لطفا زبان خود را انتخاب کنید:", reply_markup=markup)
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith('lang_'))
+def callback_query(call):
+    uid = str(call.from_user.id)
+    lang = call.data.split('_')[1]
+    users[uid] = {'lang': lang}
+    save_users()
     
-    bot.reply_to(message, "Welcome to BlueFalcon Telegram Bot!", reply_markup=markup)
+    bot.answer_callback_query(call.id, LANGUAGES[lang]['lang_changed'])
+    bot.delete_message(call.message.chat.id, call.message.message_id)
+    
+    show_main_menu(call.message.chat.id, uid)
+
+def show_main_menu(chat_id, uid):
+    lang = users.get(uid, {}).get('lang', 'en')
+    t = LANGUAGES[lang]
+    
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    markup.add(types.KeyboardButton(t['products']), types.KeyboardButton(t['cart']))
+    markup.add(types.KeyboardButton(t['account']), types.KeyboardButton(t['support']))
+    
+    bot.send_message(chat_id, t['welcome'], reply_markup=markup)
 
 @bot.message_handler(func=lambda message: True)
 def echo_all(message):
-    bot.reply_to(message, f"You pressed or said: {message.text}")
+    uid = str(message.from_user.id)
+    lang = users.get(uid, {}).get('lang', 'en')
+    t = LANGUAGES[lang]
+    
+    if message.text in [LANGUAGES['en']['products'], LANGUAGES['fa']['products']]:
+        bot.reply_to(message, t['no_products'])
+    elif message.text in [LANGUAGES['en']['cart'], LANGUAGES['fa']['cart']]:
+        bot.reply_to(message, t['cart_empty'])
+    elif message.text in [LANGUAGES['en']['account'], LANGUAGES['fa']['account']]:
+        bot.reply_to(message, t['acc_details'])
+    elif message.text in [LANGUAGES['en']['support'], LANGUAGES['fa']['support']]:
+        bot.reply_to(message, t['contact_admin'])
+    else:
+        bot.reply_to(message, t['unknown'])
 
 if __name__ == "__main__":
     if BOT_TOKEN:
@@ -265,22 +338,7 @@ configure_api() {
     read -p "Press Enter to return..."
 }
 
-configure_menu() {
-    echo ""
-    tput cnorm
-    read -p "Enter menu buttons separated by commas (e.g. Help,About,Contact): " menu_btns
-    if [[ -z "$menu_btns" ]]; then
-        echo -e "${RED}Error: Menu cannot be empty.${NC}"
-        sleep 2
-        return
-    fi
-    
-    sed -i '/^MENU_BUTTONS=/d' "$CONFIG_FILE"
-    echo "MENU_BUTTONS=\"$menu_btns\"" >> "$CONFIG_FILE"
-    
-    echo -e "${GREEN}Menu buttons secured in ${CONFIG_FILE}.${NC}"
-    read -p "Press Enter to return..."
-}
+
 
 
 do_start_bot() {
@@ -352,10 +410,9 @@ display_menu() {
     echo -e "${BOLD_BLUE}======================================================${NC}"
     echo -e " 1) Install Environment & Generate Bot"
     echo -e " 2) Configure Telegram API Token"
-    echo -e " 3) Configure Bot Menu Buttons"
-    echo -e " 4) Start Bot"
-    echo -e " 5) Stop Bot"
-    echo -e " 6) Show Logs"
+    echo -e " 3) Start Bot"
+    echo -e " 4) Stop Bot"
+    echo -e " 5) Show Logs"
     echo -e " 0) Exit"
     echo -e "${BOLD_BLUE}------------------------------------------------------${NC}"
 }
@@ -367,7 +424,7 @@ main_loop() {
         read -p "Select option: " choice
         
         # Input Validation
-        if [[ ! "$choice" =~ ^[0-6]$ ]]; then
+        if [[ ! "$choice" =~ ^[0-5]$ ]]; then
             echo -e "${RED}Invalid input. Please enter a valid number.${NC}"
             sleep 1
             continue
@@ -376,10 +433,9 @@ main_loop() {
         case $choice in
             1) install_dependencies ;;
             2) configure_api ;;
-            3) configure_menu ;;
-            4) start_bot ;;
-            5) stop_bot ;;
-            6) show_logs ;;
+            3) start_bot ;;
+            4) stop_bot ;;
+            5) show_logs ;;
             0) cleanup ;;
         esac
     done

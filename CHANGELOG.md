@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+v1.4:
+- add dual-language support (English and Persian) to the generated Telegram bot.
+- add Small Online Shop default template layout with bilingual reply keyboards.
+- remove simple terminal menu configurator to support the more advanced JSON-based bilingual template.
+
 v1.3:
 - add CHANGELOG.md file to track all versions and script updates.
 - fix script version consistency across `README.md`, `install.sh`, and `bluefalcon.sh`.
