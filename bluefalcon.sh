@@ -206,6 +206,8 @@ db = {
     "users": {},
     "products": {},
     "settings": {
+        "shop_name": "Online Shop",
+        "shop_logo": None,
         "admin_card": "1234-5678-9012-3456",
         "admin_name": "Admin Name",
         "direct_link": "https://gateway.com/pay",
@@ -218,7 +220,8 @@ def load_db():
     if os.path.exists(DB_FILE):
         with open(DB_FILE, 'r') as f:
             try:
-                db = json.load(f)
+                data = json.load(f)
+                db.update(data)
             except:
                 pass
 
@@ -230,7 +233,7 @@ load_db()
 
 LANGUAGES = {
     'en': {
-        'welcome': 'Welcome to our Online Shop!',
+        'welcome': 'Welcome to {shop}!',
         'products': '🛍 Products',
         'balance': '💳 Balance',
         'purchases': '📦 My Purchases',
@@ -251,14 +254,30 @@ LANGUAGES = {
         'purchased_success': 'Successfully purchased from balance! Order ID: {oid}',
         'no_purchases': 'No purchases yet.',
         'admin_menu': 'Admin Panel:',
+        'set_name': 'Set Shop Name',
+        'set_logo': 'Set Shop Logo',
         'add_product': 'Add Product',
         'add_balance': 'Add User Balance',
         'assign_product': 'Assign Product',
         'set_card': 'Set Card Info',
-        'set_link': 'Set Direct Link'
+        'set_link': 'Set Direct Link',
+        'ask_prod_name': 'Please enter the Product Name:',
+        'ask_prod_price': 'Please enter the Product Price (Number):',
+        'ask_assign_uid': 'Enter User ID to assign product to:',
+        'ask_assign_oid': 'Enter a unique Order ID (e.g. PayNo123):',
+        'ask_assign_item': 'Enter the Product Name to deliver:',
+        'ask_bal_uid': 'Enter User ID to add balance to:',
+        'ask_bal_amt': 'Enter amount to add:',
+        'ask_card_num': 'Enter Bank Card Number:',
+        'ask_card_name': 'Enter Account Holder Name:',
+        'ask_link': 'Enter Direct Payment Link:',
+        'ask_shop_name': 'Enter the new Shop Name:',
+        'ask_shop_logo': 'Send me the new Shop Logo (Photo):',
+        'success': 'Action completed successfully!',
+        'error': 'Error processing your request.'
     },
     'fa': {
-        'welcome': 'به فروشگاه ما خوش آمدید!',
+        'welcome': 'به {shop} خوش آمدید!',
         'products': '🛍 محصولات',
         'balance': '💳 موجودی',
         'purchases': '📦 خریدهای من',
@@ -279,17 +298,35 @@ LANGUAGES = {
         'purchased_success': 'خرید با موفقیت انجام شد! شماره سفارش: {oid}',
         'no_purchases': 'خریدی ثبت نشده.',
         'admin_menu': 'پنل مدیریت:',
+        'set_name': 'تنظیم نام فروشگاه',
+        'set_logo': 'تنظیم لوگو فروشگاه',
         'add_product': 'افزودن محصول',
         'add_balance': 'افزایش موجودی کاربر',
         'assign_product': 'ثبت خرید کاربر',
         'set_card': 'تنظیمات کارت بانکی',
-        'set_link': 'تنظیمات درگاه'
+        'set_link': 'تنظیمات درگاه',
+        'ask_prod_name': 'لطفا نام محصول را وارد کنید:',
+        'ask_prod_price': 'لطفا قیمت محصول را وارد کنید:',
+        'ask_assign_uid': 'آیدی کاربر را وارد کنید:',
+        'ask_assign_oid': 'شماره سفارش را وارد کنید:',
+        'ask_assign_item': 'نام محصول را وارد کنید:',
+        'ask_bal_uid': 'آیدی کاربر را وارد کنید:',
+        'ask_bal_amt': 'مبلغ شارژ را وارد کنید:',
+        'ask_card_num': 'شماره کارت بانکی را وارد کنید:',
+        'ask_card_name': 'نام صاحب حساب را وارد کنید:',
+        'ask_link': 'لینک درگاه پرداخت را وارد کنید:',
+        'ask_shop_name': 'نام جدید فروشگاه را وارد کنید:',
+        'ask_shop_logo': 'لطفا عکس لوگو را ارسال کنید:',
+        'success': 'عملیات با موفقیت انجام شد!',
+        'error': 'خطا در پردازش اطلاعات.'
     }
 }
 
 def get_t(uid, key):
     lang = db['users'].get(str(uid), {}).get('lang', 'en')
     return LANGUAGES[lang].get(key, LANGUAGES['en'].get(key, key))
+
+admin_states = {}
 
 @bot.message_handler(commands=['start', 'lang'])
 def send_welcome(message):
@@ -301,7 +338,15 @@ def send_welcome(message):
     markup = types.InlineKeyboardMarkup()
     markup.add(types.InlineKeyboardButton("🇬🇧 English", callback_data="lang_en"),
                types.InlineKeyboardButton("🇮🇷 فارسی", callback_data="lang_fa"))
-    bot.reply_to(message, "Please select your language / لطفا زبان خود را انتخاب کنید:", reply_markup=markup)
+    
+    shop_name = db['settings'].get('shop_name', 'Online Shop')
+    text = get_t(uid, 'welcome').format(shop=shop_name) + "\n\nPlease select your language / لطفا زبان خود را انتخاب کنید:"
+    
+    logo = db['settings'].get('shop_logo')
+    if logo:
+        bot.send_photo(message.chat.id, logo, caption=text, reply_markup=markup)
+    else:
+        bot.reply_to(message, text, reply_markup=markup)
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('lang_'))
 def callback_query(call):
@@ -322,7 +367,8 @@ def show_main_menu(chat_id, uid):
     if str(uid) == str(ADMIN_ID):
         markup.add(types.KeyboardButton(get_t(uid, 'admin_panel')))
     
-    bot.send_message(chat_id, get_t(uid, 'welcome'), reply_markup=markup)
+    shop_name = db['settings'].get('shop_name', 'Online Shop')
+    bot.send_message(chat_id, get_t(uid, 'welcome').format(shop=shop_name), reply_markup=markup)
 
 @bot.message_handler(content_types=['contact'])
 def contact_handler(message):
@@ -332,11 +378,26 @@ def contact_handler(message):
     bot.reply_to(message, get_t(uid, 'phone_saved'))
     show_main_menu(message.chat.id, uid)
 
+@bot.message_handler(content_types=['photo'])
+def photo_handler(message):
+    uid = str(message.from_user.id)
+    if uid == str(ADMIN_ID) and admin_states.get(uid) == 'awaiting_logo':
+        db['settings']['shop_logo'] = message.photo[-1].file_id
+        save_db()
+        admin_states[uid] = None
+        bot.reply_to(message, get_t(uid, 'success'))
+        show_main_menu(message.chat.id, uid)
+
 @bot.message_handler(func=lambda message: True)
 def text_handler(message):
     uid = str(message.from_user.id)
     text = message.text
     
+    state = admin_states.get(uid)
+    if state:
+        process_admin_state(message, uid, state)
+        return
+        
     if text in [LANGUAGES['en']['products'], LANGUAGES['fa']['products']]:
         if not db['products']:
             bot.reply_to(message, get_t(uid, 'no_products'))
@@ -376,6 +437,8 @@ def text_handler(message):
         
     elif text in [LANGUAGES['en']['admin_panel'], LANGUAGES['fa']['admin_panel']] and uid == str(ADMIN_ID):
         markup = types.InlineKeyboardMarkup()
+        markup.add(types.InlineKeyboardButton(get_t(uid, 'set_name'), callback_data="admin_setname"))
+        markup.add(types.InlineKeyboardButton(get_t(uid, 'set_logo'), callback_data="admin_setlogo"))
         markup.add(types.InlineKeyboardButton(get_t(uid, 'add_product'), callback_data="admin_addprod"))
         markup.add(types.InlineKeyboardButton(get_t(uid, 'assign_product'), callback_data="admin_assign"))
         markup.add(types.InlineKeyboardButton(get_t(uid, 'add_balance'), callback_data="admin_bal"))
@@ -415,79 +478,117 @@ def inline_handler(call):
         bot.send_message(call.message.chat.id, msg)
         bot.answer_callback_query(call.id)
         
+    elif data == "admin_setname" and uid == str(ADMIN_ID):
+        admin_states[uid] = 'awaiting_name'
+        bot.send_message(call.message.chat.id, get_t(uid, 'ask_shop_name'))
+    elif data == "admin_setlogo" and uid == str(ADMIN_ID):
+        admin_states[uid] = 'awaiting_logo'
+        bot.send_message(call.message.chat.id, get_t(uid, 'ask_shop_logo'))
     elif data == "admin_addprod" and uid == str(ADMIN_ID):
-        msg = bot.send_message(call.message.chat.id, "Enter Product Name and Price separated by comma (e.g. VIP Pass, 10):")
-        bot.register_next_step_handler(msg, process_add_prod)
-        
+        admin_states[uid] = 'awaiting_prod_name'
+        bot.send_message(call.message.chat.id, get_t(uid, 'ask_prod_name'))
     elif data == "admin_assign" and uid == str(ADMIN_ID):
-        msg = bot.send_message(call.message.chat.id, "Enter UserID, OrderID, ItemName separated by comma:")
-        bot.register_next_step_handler(msg, process_assign)
-        
+        admin_states[uid] = 'awaiting_assign_uid'
+        bot.send_message(call.message.chat.id, get_t(uid, 'ask_assign_uid'))
     elif data == "admin_bal" and uid == str(ADMIN_ID):
-        msg = bot.send_message(call.message.chat.id, "Enter UserID, Amount separated by comma:")
-        bot.register_next_step_handler(msg, process_add_bal)
-        
+        admin_states[uid] = 'awaiting_bal_uid'
+        bot.send_message(call.message.chat.id, get_t(uid, 'ask_bal_uid'))
     elif data == "admin_setcard" and uid == str(ADMIN_ID):
-        msg = bot.send_message(call.message.chat.id, "Enter Card Number and Name separated by comma:")
-        bot.register_next_step_handler(msg, process_set_card)
-        
+        admin_states[uid] = 'awaiting_card_num'
+        bot.send_message(call.message.chat.id, get_t(uid, 'ask_card_num'))
     elif data == "admin_setlink" and uid == str(ADMIN_ID):
-        msg = bot.send_message(call.message.chat.id, "Enter Direct Gateway Link:")
-        bot.register_next_step_handler(msg, process_set_link)
+        admin_states[uid] = 'awaiting_link'
+        bot.send_message(call.message.chat.id, get_t(uid, 'ask_link'))
 
-def process_add_prod(message):
-    try:
-        name, price = message.text.split(',')
-        pid = str(uuid.uuid4())[:6]
-        db['products'][pid] = {"name": name.strip(), "price": float(price.strip())}
-        save_db()
-        bot.reply_to(message, "Product added.")
-    except:
-        bot.reply_to(message, "Format error.")
+# FSM Processor
+admin_temp = {}
 
-def process_assign(message):
+def process_admin_state(message, uid, state):
+    text = message.text
     try:
-        userid, oid, item = [x.strip() for x in message.text.split(',')]
-        if userid in db['users']:
-            db['users'][userid]['purchases'].append({"order_id": oid, "item": item})
+        if state == 'awaiting_name':
+            db['settings']['shop_name'] = text
             save_db()
-            bot.reply_to(message, "Purchase assigned.")
-            bot.send_message(userid, f"Admin delivered a purchase! Order ID: {oid}")
-        else:
-            bot.reply_to(message, "User not found.")
-    except:
-        bot.reply_to(message, "Format error.")
-
-def process_add_bal(message):
-    try:
-        userid, amt = [x.strip() for x in message.text.split(',')]
-        if userid in db['users']:
-            db['users'][userid]['balance'] += float(amt)
+            admin_states[uid] = None
+            bot.reply_to(message, get_t(uid, 'success'))
+            show_main_menu(message.chat.id, uid)
+            
+        elif state == 'awaiting_prod_name':
+            admin_temp[uid] = {'prod_name': text}
+            admin_states[uid] = 'awaiting_prod_price'
+            bot.reply_to(message, get_t(uid, 'ask_prod_price'))
+            
+        elif state == 'awaiting_prod_price':
+            price = float(text)
+            pid = str(uuid.uuid4())[:6]
+            db['products'][pid] = {"name": admin_temp[uid]['prod_name'], "price": price}
             save_db()
-            bot.reply_to(message, "Balance added.")
-            bot.send_message(userid, f"Your balance increased by ${amt}")
-        else:
-            bot.reply_to(message, "User not found.")
-    except:
-        bot.reply_to(message, "Format error.")
-
-def process_set_card(message):
-    try:
-        card, name = [x.strip() for x in message.text.split(',')]
-        db['settings']['admin_card'] = card
-        db['settings']['admin_name'] = name
-        save_db()
-        bot.reply_to(message, "Card info saved.")
-    except:
-        bot.reply_to(message, "Format error.")
-
-def process_set_link(message):
-    try:
-        db['settings']['direct_link'] = message.text.strip()
-        save_db()
-        bot.reply_to(message, "Link saved.")
-    except:
-        bot.reply_to(message, "Format error.")
+            admin_states[uid] = None
+            bot.reply_to(message, get_t(uid, 'success'))
+            
+        elif state == 'awaiting_assign_uid':
+            if text in db['users']:
+                admin_temp[uid] = {'assign_uid': text}
+                admin_states[uid] = 'awaiting_assign_oid'
+                bot.reply_to(message, get_t(uid, 'ask_assign_oid'))
+            else:
+                bot.reply_to(message, "User not found.")
+                admin_states[uid] = None
+                
+        elif state == 'awaiting_assign_oid':
+            admin_temp[uid]['assign_oid'] = text
+            admin_states[uid] = 'awaiting_assign_item'
+            bot.reply_to(message, get_t(uid, 'ask_assign_item'))
+            
+        elif state == 'awaiting_assign_item':
+            item = text
+            target_uid = admin_temp[uid]['assign_uid']
+            oid = admin_temp[uid]['assign_oid']
+            db['users'][target_uid]['purchases'].append({"order_id": oid, "item": item})
+            save_db()
+            admin_states[uid] = None
+            bot.reply_to(message, get_t(uid, 'success'))
+            bot.send_message(target_uid, f"Admin delivered a purchase! Order ID: {oid}")
+            
+        elif state == 'awaiting_bal_uid':
+            if text in db['users']:
+                admin_temp[uid] = {'bal_uid': text}
+                admin_states[uid] = 'awaiting_bal_amt'
+                bot.reply_to(message, get_t(uid, 'ask_bal_amt'))
+            else:
+                bot.reply_to(message, "User not found.")
+                admin_states[uid] = None
+                
+        elif state == 'awaiting_bal_amt':
+            amt = float(text)
+            target_uid = admin_temp[uid]['bal_uid']
+            db['users'][target_uid]['balance'] += amt
+            save_db()
+            admin_states[uid] = None
+            bot.reply_to(message, get_t(uid, 'success'))
+            bot.send_message(target_uid, f"Your balance increased by ${amt}")
+            
+        elif state == 'awaiting_card_num':
+            admin_temp[uid] = {'card_num': text}
+            admin_states[uid] = 'awaiting_card_name'
+            bot.reply_to(message, get_t(uid, 'ask_card_name'))
+            
+        elif state == 'awaiting_card_name':
+            db['settings']['admin_card'] = admin_temp[uid]['card_num']
+            db['settings']['admin_name'] = text
+            save_db()
+            admin_states[uid] = None
+            bot.reply_to(message, get_t(uid, 'success'))
+            
+        elif state == 'awaiting_link':
+            db['settings']['direct_link'] = text
+            save_db()
+            admin_states[uid] = None
+            bot.reply_to(message, get_t(uid, 'success'))
+            
+    except Exception as e:
+        bot.reply_to(message, get_t(uid, 'error'))
+        admin_states[uid] = None
 
 if __name__ == "__main__":
     if BOT_TOKEN:
@@ -505,14 +606,11 @@ EOF
     fi
 }
 
-install_dependencies() {
+install_bot() {
     echo ""
     run_task "Installing environment and generating bot" do_install_dependencies
     echo -e "${GREEN}Dependencies processed successfully.${NC}"
-    read -p "Press Enter to return..."
-}
-
-configure_api() {
+    
     echo ""
     tput cnorm
     read -p "Enter Telegram Bot Token: " bot_token
@@ -535,7 +633,7 @@ configure_api() {
     echo "BOT_TOKEN=\"$bot_token\"" >> "$CONFIG_FILE"
     echo "ADMIN_ID=\"$admin_id\"" >> "$CONFIG_FILE"
     
-    echo -e "${GREEN}Configuration secured in ${CONFIG_FILE}.${NC}"
+    echo -e "${GREEN}Configuration secured!${NC}"
     read -p "Press Enter to return..."
 }
 
@@ -563,12 +661,12 @@ do_start_bot() {
     echo $! > bot.pid
 }
 
-start_bot() {
+toggle_bot() {
     echo ""
-    if [ ! -f "$BOT_DIR/bot.pid" ] || ! kill -0 $(cat "$BOT_DIR/bot.pid" 2>/dev/null) 2>/dev/null; then
-        run_task "Starting Bot service" do_start_bot
+    if [ -f "$BOT_DIR/bot.pid" ] && kill -0 $(cat "$BOT_DIR/bot.pid" 2>/dev/null) 2>/dev/null; then
+        run_task "Stopping Bot service" do_stop_bot
     else
-        echo -e "${YELLOW}Bot is already running (PID: $(cat "$BOT_DIR/bot.pid")).${NC}"
+        run_task "Starting Bot service" do_start_bot
     fi
     read -p "Press Enter to return..."
 }
@@ -584,11 +682,6 @@ do_stop_bot() {
     fi
 }
 
-stop_bot() {
-    echo ""
-    run_task "Stopping Bot service" do_stop_bot
-    read -p "Press Enter to return..."
-}
 
 show_logs() {
     clear
@@ -606,14 +699,19 @@ show_logs() {
 # ==========================================
 display_menu() {
     clear
+    local status="${RED}Stopped${NC}"
+    if [ -f "$BOT_DIR/bot.pid" ] && kill -0 $(cat "$BOT_DIR/bot.pid" 2>/dev/null) 2>/dev/null; then
+        status="${GREEN}Running${NC}"
+    fi
+
     echo -e "${BOLD_BLUE}======================================================${NC}"
     echo -e "${BOLD_BLUE}             BlueFalcon Telegram Bot ${SCRIPT_VERSION}              ${NC}"
     echo -e "${BOLD_BLUE}======================================================${NC}"
-    echo -e " 1) Install Environment & Generate Bot"
-    echo -e " 2) Configure Telegram API Token"
-    echo -e " 3) Start Bot"
-    echo -e " 4) Stop Bot"
-    echo -e " 5) Show Logs"
+    echo -e " Bot Status: ${status}"
+    echo -e "${BOLD_BLUE}------------------------------------------------------${NC}"
+    echo -e " 1) Install Bot"
+    echo -e " 2) Start/Stop Bot"
+    echo -e " 3) Logs"
     echo -e " 0) Exit"
     echo -e "${BOLD_BLUE}------------------------------------------------------${NC}"
 }
@@ -625,18 +723,16 @@ main_loop() {
         read -p "Select option: " choice
         
         # Input Validation
-        if [[ ! "$choice" =~ ^[0-5]$ ]]; then
+        if [[ ! "$choice" =~ ^[0-3]$ ]]; then
             echo -e "${RED}Invalid input. Please enter a valid number.${NC}"
             sleep 1
             continue
         fi
 
         case $choice in
-            1) install_dependencies ;;
-            2) configure_api ;;
-            3) start_bot ;;
-            4) stop_bot ;;
-            5) show_logs ;;
+            1) install_bot ;;
+            2) toggle_bot ;;
+            3) show_logs ;;
             0) cleanup ;;
         esac
     done
