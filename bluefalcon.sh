@@ -17,6 +17,15 @@ readonly LOG_FILE="/var/log/bluefalcon-bot.log"
 readonly SCRIPT_LOG="/var/log/bluefalcon-script.log"
 readonly BOT_DIR="/opt/bluefalcon-bot"
 
+# Colors
+readonly C_RED='\033[0;31m'
+readonly C_GREEN='\033[0;32m'
+readonly C_YELLOW='\033[0;33m'
+readonly C_BLUE='\033[0;34m'
+readonly C_CYAN='\033[0;36m'
+readonly C_BOLD='\033[1m'
+readonly C_RESET='\033[0m'
+
 # ==========================================
 # UTILITIES
 # ==========================================
@@ -115,30 +124,34 @@ get_bot_status() {
 # ==========================================
 show_menu() {
     clear
+    local status_raw
+    status_raw=$(get_bot_status)
     local status_line
-    status_line=$(get_bot_status)
+    if [[ "$status_raw" == RUNNING* ]]; then
+        local pid="${status_raw#*PID: }"
+        status_line="${C_GREEN}${C_BOLD}● RUNNING${C_RESET}  ${C_CYAN}(PID: $pid)${C_RESET}"
+    else
+        status_line="${C_RED}${C_BOLD}○ STOPPED${C_RESET}"
+    fi
 
-    echo "-----------------------------------------------"
-    echo "-----------------------------------------------"
-    echo "              BlueFalcon Telegram Bot        $SCRIPT_VERSION"
-    echo "-----------------------------------------------"
-    echo "-----------------------------------------------"
-    echo "Bot Status: $status_line"
-    echo "-----------------------------------------------"
-    echo "1- Install / Update Bot"
-    echo "2- Configure Bot (Token & Admin ID)"
-    echo "3- Stop / Start"
-    echo "4- Remove Bot Completely"
-    echo "5- View Logs"
-    echo "0- Exit"
+    echo -e "${C_BLUE}${C_BOLD}"
+    echo "  ╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮"
+    echo "  │           BlueFalcon Manager $SCRIPT_VERSION           │"
+    echo "  ╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯${C_RESET}"
     echo ""
-    printf "Select option: "
+    echo -e "  Status: $status_line"
+    echo ""
+    echo -e "  ${C_CYAN}1)${C_RESET} Update Bot       ${C_CYAN}4)${C_RESET} Remove Bot"
+    echo -e "  ${C_CYAN}2)${C_RESET} Configure        ${C_CYAN}5)${C_RESET} View Logs"
+    echo -e "  ${C_CYAN}3)${C_RESET} Start / Stop     ${C_CYAN}0)${C_RESET} Exit"
+    echo ""
+    printf "  ${C_YELLOW}▶ Select option: ${C_RESET}"
 }
 
 auto_return() {
     echo ""
-    echo "$1"
-    echo "Returning to menu in 3 seconds..."
+    echo -e "  $1"
+    echo -e "  ${C_CYAN}Returning to menu in 3 seconds...${C_RESET}"
     sleep 3
 }
 
