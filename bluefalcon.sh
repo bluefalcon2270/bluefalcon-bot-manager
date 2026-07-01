@@ -1286,7 +1286,7 @@ remove_bot() {
     echo ""
     printf "  Are you sure you want to completely remove the bot? [y/N]: "
     read -r confirm
-    if [[ "$confirm" =~ ^[Yy]$ ]]; do
+    if [[ "$confirm" =~ ^[Yy]$ ]]; then
         run_task "Stopping Bot" do_stop_bot || true
         rm -rf "$BOT_DIR"
         rm -f /usr/local/bin/bluefalcon
