@@ -1,7 +1,7 @@
 #!/bin/bash
 # ==============================================================================
 # BlueFalcon Bot Manager
-# Version: v1.0
+# Version: v1.1
 # Description: Expert-grade Linux deployment script for Telegram Bots.
 # ==============================================================================
 
@@ -10,7 +10,7 @@ set -eEu -o pipefail
 # ==========================================
 # CONSTANTS & COLORS
 # ==========================================
-readonly VERSION="v1.0"
+readonly SCRIPT_VERSION="v1.1"
 readonly CONFIG_DIR="/etc/bluefalcon"
 readonly CONFIG_FILE="${CONFIG_DIR}/config.conf"
 readonly LOG_FILE="/var/log/bluefalcon-script.log"
@@ -279,7 +279,7 @@ show_logs() {
 display_menu() {
     clear
     echo -e "${BOLD_BLUE}======================================================${NC}"
-    echo -e "${BOLD_BLUE}             BlueFalcon Bot Manager ${VERSION}              ${NC}"
+    echo -e "${BOLD_BLUE}             BlueFalcon Bot Manager ${SCRIPT_VERSION}              ${NC}"
     echo -e "${BOLD_BLUE}======================================================${NC}"
     echo -e " 1) Install Environment & Dependencies"
     echo -e " 2) Configure Telegram API Token"
