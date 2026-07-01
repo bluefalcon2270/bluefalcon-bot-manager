@@ -36,15 +36,15 @@ log_msg() {
 run_task() {
     local msg="$1"
     shift
-    echo "  [ * ] $msg"
+    printf "  ${C_CYAN}▶${C_RESET} %-35s " "$msg"
     "$@" >> "$SCRIPT_LOG" 2>&1 &
     local pid=$!
     wait $pid || {
-        echo "  [ ✖ ] FAILED: $msg (Code: $?)"
+        echo -e "[ ${C_RED}✖ Failed${C_RESET} ]"
         log_msg "FAILED: $msg"
         exit 1
     }
-    echo "  [ ✔ ] SUCCESS: $msg"
+    echo -e "[ ${C_GREEN}✔ Done${C_RESET} ]"
     log_msg "SUCCESS: $msg"
 }
 
@@ -1217,44 +1217,41 @@ do_setup_venv() {
 
 collect_credentials() {
     echo ""
-    echo "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "  Bot Configuration"
-    echo "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
+    echo -e "  ${C_BLUE}${C_BOLD}╭─ Configure Bot API ─────────────────╮${C_RESET}"
     local bot_token=""
     while [ -z "$bot_token" ]; do
-        printf "  Bot Token: "
+        printf "  ${C_CYAN}│${C_RESET} Bot Token: "
         read -r bot_token
-        [ -z "$bot_token" ] && echo "  Token cannot be empty."
+        [ -z "$bot_token" ] && echo -e "  ${C_CYAN}│${C_RESET} ${C_RED}Required.${C_RESET}"
     done
     local admin_id=""
     while [[ ! "$admin_id" =~ ^[0-9]+$ ]]; do
-        printf "  Admin Telegram ID (numbers only): "
+        printf "  ${C_CYAN}│${C_RESET} Admin ID:  "
         read -r admin_id
-        [[ ! "$admin_id" =~ ^[0-9]+$ ]] && echo "  Must be a numeric ID."
+        [[ ! "$admin_id" =~ ^[0-9]+$ ]] && echo -e "  ${C_CYAN}│${C_RESET} ${C_RED}Numbers only.${C_RESET}"
     done
+    echo -e "  ${C_BLUE}${C_BOLD}╰─────────────────────────────────────╯${C_RESET}"
     sed -i '/^BOT_TOKEN=/d' "$CONFIG_FILE" 2>/dev/null || true
     sed -i '/^ADMIN_ID=/d'  "$CONFIG_FILE" 2>/dev/null || true
     { echo "BOT_TOKEN=\"$bot_token\""; echo "ADMIN_ID=\"$admin_id\""; } >> "$CONFIG_FILE"
     chmod 600 "$CONFIG_FILE"
     echo ""
-    echo "  ✔ Credentials saved."
+    echo -e "  ${C_GREEN}✔ Saved.${C_RESET}"
     sleep 1
 }
 
 install_bot() {
     echo ""
-    run_task "Updating dependencies" do_install_dependencies
-    collect_credentials
-    run_task "Writing bot files to $BOT_DIR" do_write_bot_files
-    run_task "Setting up Python virtual environment" do_setup_venv
-    auto_return "✅ Installation complete!"
+    run_task "Install dependencies" do_install_dependencies
+    run_task "Write bot files" do_write_bot_files
+    run_task "Setup Python venv" do_setup_venv
+    auto_return "${C_GREEN}✔ Installation complete!${C_RESET}"
 }
 
 configure_bot() {
     echo ""
     collect_credentials
-    auto_return "✅ Bot configured."
+    auto_return "${C_GREEN}✔ Bot configured.${C_RESET}"
 }
 
 # ==========================================
