@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+v1.6:
+- add Shop Name and Shop Logo management to Telegram Admin Panel.
+- upgrade Admin Panel to use a conversational state machine (step-by-step inputs) instead of comma-separated strings.
+- overhaul Bash terminal UI into a smart dashboard with real-time Bot Status.
+- simplify Bash menu to "Install Bot", "Start/Stop Toggle", and "Logs".
+- merge API token configuration securely into the "Install Bot" process.
+
 v1.5:
 - add fully-featured E-Commerce system generated directly by Bash.
 - add Admin Panel for bot owners to manage products, settings, and deliver purchases.
