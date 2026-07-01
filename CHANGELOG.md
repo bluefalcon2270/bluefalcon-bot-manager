@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file.
 
+v2.1.1 (Fix)
+
 v2.1 (UI Overhaul & FAQ):
 - Transitioned main bot navigation from Reply Keyboard to Inline Keyboard menus.
 - Bottom keyboard now only contains Main Menu and Restart Bot.
