@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+v2.1 (UI Overhaul & FAQ):
+- Transitioned main bot navigation from Reply Keyboard to Inline Keyboard menus.
+- Bottom keyboard now only contains Main Menu and Restart Bot.
+- Redesigned "My Account" to show all stats in a clean inline message.
+- "Invite Friend" sub-menu now explicitly shows copyable link, total invited, and invited with purchases.
+- Dynamic FAQ System added: users can browse FAQs inline, admins can manage them via panel.
+- Card-to-Card Receipt Validation: Users now submit a Receipt ID upon transfer, sending an approval card to the admin for 1-click automated balance crediting.
+- Terminal UI styling fixed to prevent visual breakage and options streamlined.
+
 v2.0 (Complete Professional Rewrite):
 - Full ground-up rewrite of Python bot with clean FSM state machine architecture.
 - Beautiful bilingual (EN/FA) welcome screen with shop logo on /start.
