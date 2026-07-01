@@ -1,10 +1,10 @@
 <div align="center">
 
-# 🤖 BlueFalcon Bot Manager
+# 🤖 BlueFalcon Telegram Bot
 
 **The strict, secure, and automated Linux deployment toolkit for Telegram Bots.**
 
-![Version](https://img.shields.io/badge/Version-v1.1-blue?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-v1.3-blue?style=for-the-badge)
 ![Linux](https://img.shields.io/badge/Platform-Debian%20%7C%20Ubuntu-FCC624?style=for-the-badge&logo=linux&logoColor=black)
 [![Language](https://img.shields.io/badge/Written%20in-Shell/Python-121011?style=for-the-badge&logo=gnu-bash&logoColor=white)](https://www.gnu.org/software/bash/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)

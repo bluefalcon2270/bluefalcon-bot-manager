@@ -1,7 +1,7 @@
 #!/bin/bash
 # ==============================================================================
-# BlueFalcon Bot Manager
-# Version: v1.1
+# BlueFalcon Telegram Bot
+# Version: v1.3
 # Description: Expert-grade Linux deployment script for Telegram Bots.
 # ==============================================================================
 
@@ -10,7 +10,7 @@ set -eEu -o pipefail
 # ==========================================
 # CONSTANTS & COLORS
 # ==========================================
-readonly SCRIPT_VERSION="v1.1"
+readonly SCRIPT_VERSION="v1.3"
 readonly CONFIG_DIR="/etc/bluefalcon"
 readonly CONFIG_FILE="${CONFIG_DIR}/config.conf"
 readonly LOG_FILE="/var/log/bluefalcon-script.log"
@@ -171,6 +171,57 @@ do_install_dependencies() {
     install_pkg python3-venv
     
     cd "$BOT_DIR"
+    
+    cat << 'EOF' > requirements.txt
+pyTelegramBotAPI==4.14.0
+EOF
+
+    cat << 'EOF' > main.py
+import os
+import telebot
+from telebot import types
+
+CONFIG_FILE = "/etc/bluefalcon/config.conf"
+
+def load_config():
+    config = {}
+    if os.path.exists(CONFIG_FILE):
+        with open(CONFIG_FILE, 'r') as f:
+            for line in f:
+                if '=' in line and not line.startswith('#'):
+                    key, val = line.strip().split('=', 1)
+                    config[key] = val.strip('"\'')
+    return config
+
+config = load_config()
+BOT_TOKEN = config.get("BOT_TOKEN", "")
+MENU_BUTTONS = config.get("MENU_BUTTONS", "Help,About,Contact").split(',')
+
+bot = telebot.TeleBot(BOT_TOKEN)
+
+@bot.message_handler(commands=['start'])
+def send_welcome(message):
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    row = []
+    for btn in MENU_BUTTONS:
+        if btn.strip():
+            row.append(types.KeyboardButton(btn.strip()))
+    if row:
+        markup.add(*row)
+    
+    bot.reply_to(message, "Welcome to BlueFalcon Telegram Bot!", reply_markup=markup)
+
+@bot.message_handler(func=lambda message: True)
+def echo_all(message):
+    bot.reply_to(message, f"You pressed or said: {message.text}")
+
+if __name__ == "__main__":
+    if BOT_TOKEN:
+        bot.infinity_polling()
+    else:
+        print("Error: BOT_TOKEN is missing")
+EOF
+
     if [ ! -d "venv" ]; then
         python3 -m venv venv
     fi
@@ -182,7 +233,7 @@ do_install_dependencies() {
 
 install_dependencies() {
     echo ""
-    run_task "Installing system dependencies" do_install_dependencies
+    run_task "Installing environment and generating bot" do_install_dependencies
     echo -e "${GREEN}Dependencies processed successfully.${NC}"
     read -p "Press Enter to return..."
 }
@@ -213,6 +264,24 @@ configure_api() {
     echo -e "${GREEN}Configuration secured in ${CONFIG_FILE}.${NC}"
     read -p "Press Enter to return..."
 }
+
+configure_menu() {
+    echo ""
+    tput cnorm
+    read -p "Enter menu buttons separated by commas (e.g. Help,About,Contact): " menu_btns
+    if [[ -z "$menu_btns" ]]; then
+        echo -e "${RED}Error: Menu cannot be empty.${NC}"
+        sleep 2
+        return
+    fi
+    
+    sed -i '/^MENU_BUTTONS=/d' "$CONFIG_FILE"
+    echo "MENU_BUTTONS=\"$menu_btns\"" >> "$CONFIG_FILE"
+    
+    echo -e "${GREEN}Menu buttons secured in ${CONFIG_FILE}.${NC}"
+    read -p "Press Enter to return..."
+}
+
 
 do_start_bot() {
     cd "$BOT_DIR"
@@ -279,13 +348,14 @@ show_logs() {
 display_menu() {
     clear
     echo -e "${BOLD_BLUE}======================================================${NC}"
-    echo -e "${BOLD_BLUE}             BlueFalcon Bot Manager ${SCRIPT_VERSION}              ${NC}"
+    echo -e "${BOLD_BLUE}             BlueFalcon Telegram Bot ${SCRIPT_VERSION}              ${NC}"
     echo -e "${BOLD_BLUE}======================================================${NC}"
-    echo -e " 1) Install Environment & Dependencies"
+    echo -e " 1) Install Environment & Generate Bot"
     echo -e " 2) Configure Telegram API Token"
-    echo -e " 3) Start Bot"
-    echo -e " 4) Stop Bot"
-    echo -e " 5) Show Logs"
+    echo -e " 3) Configure Bot Menu Buttons"
+    echo -e " 4) Start Bot"
+    echo -e " 5) Stop Bot"
+    echo -e " 6) Show Logs"
     echo -e " 0) Exit"
     echo -e "${BOLD_BLUE}------------------------------------------------------${NC}"
 }
@@ -297,7 +367,7 @@ main_loop() {
         read -p "Select option: " choice
         
         # Input Validation
-        if [[ ! "$choice" =~ ^[0-5]$ ]]; then
+        if [[ ! "$choice" =~ ^[0-6]$ ]]; then
             echo -e "${RED}Invalid input. Please enter a valid number.${NC}"
             sleep 1
             continue
@@ -306,9 +376,10 @@ main_loop() {
         case $choice in
             1) install_dependencies ;;
             2) configure_api ;;
-            3) start_bot ;;
-            4) stop_bot ;;
-            5) show_logs ;;
+            3) configure_menu ;;
+            4) start_bot ;;
+            5) stop_bot ;;
+            6) show_logs ;;
             0) cleanup ;;
         esac
     done

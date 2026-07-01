@@ -1,7 +1,7 @@
 #!/bin/bash
 # ==============================================================================
-# BlueFalcon Bot Manager - Bootstrap Installer
-# Version: v1.2
+# BlueFalcon Telegram Bot - Bootstrap Installer
+# Version: v1.3
 # Description: Secure one-liner installation wrapper to prevent memory-execution 
 #              symlink failures.
 # ==============================================================================
@@ -123,7 +123,7 @@ create_symlink() {
 # ==========================================
 clear
 echo -e "${BOLD_BLUE}======================================================${NC}"
-echo -e "${BOLD_BLUE}          BlueFalcon Bot Manager Bootstrap            ${NC}"
+echo -e "${BOLD_BLUE}          BlueFalcon Telegram Bot Bootstrap            ${NC}"
 echo -e "${BOLD_BLUE}======================================================${NC}"
 
 touch "$LOG_FILE"
