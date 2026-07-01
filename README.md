@@ -17,7 +17,8 @@ An expert-grade, meticulously strict Linux deployment toolkit for Telegram Bots.
 To automatically bootstrap the environment, establish the global executable symlinks, and launch the configuration menu, run the following command as `root`:
 
 ```bash
-bash <(curl -Ls https://raw.githubusercontent.com/bluefalcon2270/bluefalcon-bot-manager/main/install.sh
+bash <(curl -Ls https://raw.githubusercontent.com/bluefalcon2270/bluefalcon-bot-manager/main/install.sh)
+```
 
 ## Global Execution
 
